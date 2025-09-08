@@ -5,7 +5,7 @@ author: "Rick Forest"
 description: "A Quarto book that downloads, transforms, classifies, and visualizes climate data to compare a Recent Period with a Climate Standard Reference Period."
 --- -->
 
-# Introduction {#sec-intro .unnumbered}
+# Introduction
 
 ## Overview
 

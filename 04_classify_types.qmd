@@ -199,8 +199,7 @@ fn_build_summary_table <- function(df, cp) {
     gt(rowname_col = "typ" ) |>
     tab_stubhead(label = "Type")|>
     tab_header(
-      title = paste("Classification Summary:",cp),
-      subtitle = "Sorted by Percentage of Area"
+      title = paste("Classification Summary:",cp)
     ) |>
 
     # 2) center body *and* summary cells for Area

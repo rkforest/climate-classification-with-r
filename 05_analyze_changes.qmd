@@ -245,6 +245,11 @@ tcc_z1_tbl_gt
 ## ***Climate Group Visualization***
 ```{r}
 #| label: visualize
+#| #| label: v2_hw
+#| fig-width: 10
+#| fig-aspectt: .7  
+#| out-width: 100%
+
 plot_data <- kcc_zones_sf  |>
   select(cz1) |>
   rename(Group = cz1)

@@ -249,6 +249,9 @@ merged_df = merged_df[cols]
 
 ```{python}
 #| label: summary_df
+#| fig-width: 10
+#| fig-aspect: .62  
+#| out-width: 100%
 
 summary_df = (
     merged_df.style
@@ -256,27 +259,27 @@ summary_df = (
         .set_table_styles([
             # Climate Period
             {"selector": ".col0, th.col0",
-            "props": [("min-width", "120px"), ("text-align", "left")]},
+            "props": [("min-width", "110px"), ("text-align", "left")]},
 
             # Climate Variable 
             {"selector": ".col1, th.col1",
-            "props": [("min-width", "140px"), ("text-align", "left")]},
+            "props": [("min-width", "130px"), ("text-align", "left")]},
 
             # File Name
             {"selector": ".col2, th.col2",
-            "props": [("min-width", "180px"), ("text-align", "left")]},
+            "props": [("min-width", "160px"), ("text-align", "left")]},
 
             # Downloaded 
             {"selector": ".col3, th.col3",
-            "props": [("min-width", "170px"), ("text-align", "left")]},
+            "props": [("min-width", "140px"), ("text-align", "left")]},
 
             # Size (MB) 
             {"selector": ".col4, th.col4",
-            "props": [("min-width", "80px"), ("text-align", "right")]},
+            "props": [("min-width", "70px"), ("text-align", "right")]},
 
             # Time  (mm:ss)
             {"selector": ".col5, th.col5",
-            "props": [("min-width", "100px"), ("text-align", "right")]}
+            "props": [("min-width", "80px"), ("text-align", "right")]}
         ])
 )
 
