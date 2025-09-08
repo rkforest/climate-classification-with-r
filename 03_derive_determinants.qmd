@@ -1,0 +1,259 @@
+---
+title: "Derive Metrics"
+---
+
+The classification definitions for the Trewartha classification are based on this analysis description:
+<https://scispace.com/pdf/climate-classification-revisited-from-koppen-to-trewartha-40ofumhxzu.pdf>
+
+## ***Climate Periods***
+```{r}
+#| label: climate_periods
+# Climatological Reference Period
+crp = "CRP"
+crp_beg = 1961
+crp_end = 1990
+crp_lbl <- paste0(crp, " ", crp_beg, "-", crp_end)
+# Recent Climate Period
+rcp = "RCP"
+rcp_beg = 2015
+rcp_end = 2024
+rcp_lbl <- paste0(rcp, " ", rcp_beg, "-", rcp_end)
+```
+
+## ***Packages***
+```{r}
+#| label: packages
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(arrow)
+  library(gt)
+})
+```
+
+## ***Directories***
+```{r}
+#| label: directories
+dir_rd <- "_data/02_aggregated_data/"
+dir_wr <- "_data/03_transformed_data/"
+```
+
+## ***Functions***
+
+### Temperature Determinants
+
+```{r}
+#| label: fn_t_determinants 
+fn_t_determinants <- function(df) {
+
+  mcols <- paste0("m", 1:12)
+  df <- df |>
+    mutate(
+        tavg = (m1 + m2 + m3 + m4 + m5 + m6 + m7 + m8 + m9 + m10 + m11 + m12) / 12,
+        tmax = pmax(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12),
+        tmin = pmin(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12),
+        tg10 = rowSums(across(all_of(mcols), ~ .x >= 10))
+    )  
+  df <- df |>
+    select(-m1, -m2, -m3, -m4, -m5, -m6, -m7, -m8, -m9, -m10, -m11, -m12)
+  
+  return(df)
+}
+```
+
+### Precipitaion Determinants
+
+```{r}
+#| label: fn_p_determinants 
+fn_p_determinants <- function(df) {
+
+  mcols <- paste0("m", 1:12)
+  df <- df |>
+    mutate(
+      ptot = (m1 + m2 + m3 + m4 + m5 + m6 + m7 + m8 + m9 + m10 + m11 + m12),
+      pmin = pmin(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12),
+      pl60 = rowSums(across(all_of(mcols), ~ .x < 60)),
+      wtot = case_when(
+        lat >= 0 ~ (m1 + m2 + m3 + m10 + m11 + m12),
+        lat < 0 ~ (m4 + m5 + m6 + m7 + m8 + m9)
+      ),
+      stot = case_when(
+        lat >= 0 ~ (m4 + m5 + m6 + m7 + m8 + m9),
+        lat < 0 ~  (m1 + m2 + m3 + m10 + m11 + m12)
+      )
+    )     
+  df <- df |>
+    select(-m1, -m2, -m3, -m4, -m5, -m6, -m7, -m8, -m9, -m10, -m11, -m12)
+
+  return(df)
+}
+```
+
+### Aridity Threshold
+
+```{r}
+#| label: fn_aridity_threshold
+
+fn_aridity_threshold <- function(df) {
+
+# Aridity threshold formula: R = 2.3T – 0.64Pw + 41 
+
+    # R: mean annual precipitation threshold in cm
+
+    # T: mean annual air temperature in °C
+    # Pw: percentage of annual precipitation in winter (6 low-sun months)
+    # winter: October to March in Northern Hemisphere
+    #         April to September in Southern Hemisphere
+
+  df <- df |>
+    mutate(
+      term1 = (2.3 * tavg),
+      term2 = 
+        if_else(ptot != 0, 
+          (0.64 * ((wtot / ptot) * 100)), # multiply by 100 to convert to %
+          0),
+      term3 = 41,
+      athr = (term1 - term2 + term3) * 10 # convert result from cm to mm
+
+    )  |>
+    select(-term1, -term2, -term3)
+
+  return(df)
+}
+```
+
+## ***Calculate Determinants***
+
+### CRP
+
+```{r}
+#| label: crp_determinants
+
+cp <- crp
+
+cv <- "t"
+fil <- paste0(cp, "_aggregated_", cv, ".parquet")
+pth <- paste0(dir_rd, fil)
+df <- read_parquet(pth) 
+t_df <- fn_t_determinants(df)
+
+cv <- "p"
+fil <- paste0(cp, "_aggregated_", cv, ".parquet")
+pth <- paste0(dir_rd, fil)
+df <- read_parquet(pth) 
+p_df <- fn_p_determinants(df)
+
+d_df <- t_df %>% left_join(p_df, by = c("lon", "lat", "area", "lsm"))
+
+crp_df <- fn_aridity_threshold(d_df)
+
+fil <- "crp_determinants.parquet"
+pth = paste0(dir_wr, fil)
+write_parquet(crp_df, pth)
+
+```
+
+### RCP
+
+```{r}
+#| label: rcp_determinants
+
+cp <- rcp
+
+cv <- "t"
+fil <- paste0(cp, "_aggregated_", cv, ".parquet")
+pth <- paste0(dir_rd, fil)
+df <- read_parquet(pth) 
+t_df <- fn_t_determinants(df)
+
+cv <- "p"
+fil <- paste0(cp, "_aggregated_", cv, ".parquet")
+pth <- paste0(dir_rd, fil)
+df <- read_parquet(pth) 
+p_df <- fn_p_determinants(df)
+
+d_df <- t_df %>% left_join(p_df, by = c("lon", "lat", "area", "lsm"))
+
+rcp_df <- fn_aridity_threshold(d_df)
+
+fil <- "rcp_determinants.parquet"
+pth = paste0(dir_wr, fil)
+write_parquet(rcp_df, pth)
+
+```
+
+## ***Summarize Results***
+
+### Retrieve Results
+
+```{r}
+#| label: fn_retrieve_results
+fn_summarize_results <- function(df) {
+  df_means <- df |> 
+    select(-c(1:4)) |> 
+    # this format is now recommended for dplyr
+    summarise(across(everything(), \(x) mean(x, na.rm = TRUE))) |> 
+    pivot_longer(everything(),
+               names_to = "stat_id",
+               values_to = "stat_value")
+  return(df_means)
+}
+```
+
+### Join periods
+
+```{r}
+df1 <- fn_summarize_results(crp_df)
+df2 <- fn_summarize_results(rcp_df)
+
+df_joined <- df1 |> 
+  full_join(df2, by = "stat_id") |> 
+  rename(
+    crp_stat = stat_value.x,
+    rcp_stat = stat_value.y
+  ) |> 
+  mutate(
+    stat_id = recode(stat_id,
+      "tavg" = "Annual Avg Monthly Temperature",
+      "tmax" = "Annual Max Monthly Temperature",
+      "tmin" = "Annual Min Monthly Temperature",
+      "tg10" = "Annual Months with Temperature > 10°C",
+      "ptot" = "Annual Total Precipitation",
+      "pmin" = "Annual Min Monthly Precipitation",
+      "pl60" = "Annual Months with Precipitation < 60mm",
+      "wtot" = "Annual Total Winter Precipitation",
+      "stot" = "Annual Total Summer Precipitation",
+      "athr" = "Aridity Threshold"
+    )
+  )
+
+```
+
+### Build Table
+
+```{r}
+gt_tbl <- 
+  df_joined |>
+    gt(rowname_col = "stat_id") |>
+    tab_header(
+      title = "Climate Classification Determinants Summary"
+    ) |>
+    tab_spanner(
+      label = crp_lbl,
+      columns = c(crp_stat)
+    ) |>
+    tab_spanner(
+      label = rcp_lbl,
+      columns = c(rcp_stat)
+    ) |>
+    cols_label(
+      crp_stat = "Average Determinant",
+      rcp_stat = "Average Determinant",
+    ) |>
+    fmt_number(
+      columns = c(crp_stat, rcp_stat),
+      decimals = 2
+   )
+
+gt_tbl
+
+```

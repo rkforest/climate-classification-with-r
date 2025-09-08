@@ -1,0 +1,259 @@
+---
+title: "Analyze Changes"
+---
+
+## ***Climate Periods***
+```{r}
+#| label: periods
+# Climatological Reference Period
+crp = "crp"
+crp_beg <- 1961
+crp_end <- 1990
+crp_lbl <- paste("CRP ", crp_beg, "-", crp_end, sep = "")
+# Recent Climate Period
+rcp = "rcp"
+rcp_beg <- 2011
+rcp_end <- 2024
+rcp_lbl <- paste("RCP ", rcp_beg, "-", rcp_end, sep = "")
+```
+
+## ***Packages***
+```{r}
+#| label: packages
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(sf)
+  library(arrow)
+  library(units)
+  library(gt)
+})
+```
+
+## ***Directoreis***
+```{r}
+#| label: directories
+dir_rf <- "_data/00_reference/"
+dir_rd <- "_data/04_classified_data/"
+```
+
+## ***Palettes***
+```{r}
+#| label: palettes
+
+kcc_palette <- c(
+  # "A" = "#0474fb",  # Tropical
+  # "B" = "#FFAE42",  # Dry (yellow orange)
+  # "C" = "#1a9850",  # Temperate (light yellow green)
+  # "D" = "#008080",  # Continental (teal)
+  # "E" = "#5e3c99"   # Polar
+
+  "A" = "#1a9850",  # Tropical
+  "B" = "#e6c229",  # Arid 
+  "C" = "#3288bd",  # Subtropical
+  "D" = "#e66101",  # Temperate
+  "E" = "#5e3c99"   # Polar
+)
+
+kcc_labels <- c(
+  "A - Tropical",
+  "B - Dry",
+  "C - Temperate",
+  "D - Continental",
+  "E - Polar"
+)
+
+tcc_palette <- c(
+  "A" = "#1a9850",  # Tropical
+  "B" = "#e6c229",  # Arid
+  "C" = "#3288bd",  # Subtropical
+  "D" = "#e66101",  # Temperate
+  "E" = "#017783",  # Boreal
+  "F" = "#5e3c99"   # Polar
+)
+
+tcc_labels <- c(
+  "A - Tropical",
+  "B - Dry",
+  "C - Subtropical",
+  "D - Temperate",
+  "E - Boreal",
+  "F - Polar"
+)
+
+```
+
+## ***Map Projections***
+```{r}
+#| label: projections
+rbn_prj <- "ESRI:54030"
+```
+
+## ***Global Coastline***
+```{r}
+#| label: coastline
+dir <- dir_rf
+fil <- "global-coastline.gpkg"
+pth <- paste(dir, fil, sep = "")
+coastline_sf <- st_read(pth, quiet=TRUE)
+```
+
+## ***Read Zone Classifcations***
+```{r}
+#| label: classifications
+pth <- paste(dir_rd, "kcc_classifications.gpkg", sep = "")
+kcc_zones_sf <- st_read(pth, quiet=TRUE)
+pth <- paste(dir_rd, "tcc_classifications.gpkg", sep = "")
+tcc_zones_sf <- st_read(pth, quiet=TRUE)
+```
+
+## ***Functions***
+
+```{r}
+#| label: fn_climate_group_changes
+fn_climate_group_changes <- function(sf) {
+  cz1_sf <- sf |>
+    select(cz1,mkm,pct,geom) |>
+    summarize(
+      mkm = sum(mkm),
+      pct = sum(pct),
+      geom = st_combine(geom),
+      .by = c(cz1)) |>
+      rename(cg = cz1)
+
+  rz1_sf <- sf |>
+    select(rz1,mkm,pct,geom) |>
+    summarize(
+      mkm = sum(mkm),
+      pct = sum(pct),
+      geom = st_combine(geom),
+      .by = c(rz1))|>
+      rename(cg = rz1)
+
+  cz1_df <- cz1_sf |> st_drop_geometry()
+  rz1_df <- rz1_sf |> st_drop_geometry()
+
+  z1x_df <- cz1_df |> 
+    inner_join(rz1_df, by = "cg") |>
+    mutate(
+      mkm.chg = mkm.y - mkm.x,
+      pct.chg = pct.y - pct.x
+    ) |>
+    select(cg, mkm.x, mkm.y, mkm.chg, pct.x, pct.y, pct.chg)
+
+  return(z1x_df)
+}
+```
+
+```{r}
+#| label: fn_build_summary_table
+fn_build_summary_table <- function(df, cc_name) {
+  tbl <- df |>
+    gt(rowname_col = "cg" ) |>
+    tab_stubhead(label = "Group")|>
+    tab_header(
+      title = paste(cc_name," Climate Group Changes"),
+    ) |>
+    tab_spanner(
+      label = "Area (Mkm²)",
+      columns = c(mkm.x, mkm.y, mkm.chg)
+    ) |>
+    tab_spanner(
+      label = "Group % of Total",
+      columns = c(pct.x, pct.y, pct.chg)
+    ) |>
+    cols_label(
+      cg = "Climate Group",
+      mkm.x = "CRP",
+      mkm.y = "RCP",
+      mkm.chg = "Chg",
+      pct.x = "CRP",
+      pct.y = "RCP",
+      pct.chg = "Chg"
+    ) |>
+    fmt_number(columns = c(mkm.x, mkm.y, mkm.chg), decimals = 1) |>
+    fmt_number(columns = c(pct.x, pct.y, pct.chg), decimals = 2) |>
+    grand_summary_rows(
+      columns = c(mkm.x, mkm.y, mkm.chg, pct.x, pct.y, pct.chg),
+      fns = list("Total" = ~ sum(.)),
+      fmt = list(~ fmt_number(.x, decimals = 2))
+    ) |>
+    tab_footnote(
+      footnote = paste("Climatological Reference Period ", crp_beg, "-", crp_end, sep = ""),
+      locations = cells_column_labels(columns = c(mkm.x, pct.x))
+    ) |>
+    tab_footnote(
+      footnote = paste("Recent Climate Period ", rcp_beg, "-", rcp_end, sep = ""),
+      locations = cells_column_labels(columns = c(mkm.y, pct.y))
+    ) |>
+    tab_style(
+      style = cell_fill(color = "lightblue"),
+      locations = cells_body(
+        rows = abs(pct.chg) > 1   # condition here
+      )
+    )
+}
+```
+
+```{r}
+#| label: fn_create_map
+fn_create_map <- function(plot_data, cc_name, palette, labels) {
+
+  p <- ggplot(plot_data) +
+    geom_sf(aes(color = Group), size = 0.01) +
+    scale_color_manual(
+      values = palette,
+      labels = labels,
+      name = "Climate Group")+
+    geom_sf(
+      data = coastline_sf,
+      color = "black",
+      linewidth = 0.1
+    ) +
+    coord_sf(crs = rbn_prj) +
+    labs(
+      title = paste(cc_name," Climate Classification Groups"),
+      subtitle = crp_lbl,
+      color = "Groups"
+    ) +
+    guides(
+      color = guide_legend(
+        override.aes = list(
+          size = 3 # legend point size only
+        )
+      )
+    )
+    return(p)
+}
+```
+
+## ***Köppen Climate Group Changes Summary***
+```{r}
+#| label: koppen_summary
+kcc_z1_chg_df <- fn_climate_group_changes(kcc_zones_sf)
+kcc_z1_tbl_gt <- fn_build_summary_table(kcc_z1_chg_df, "Köppen")
+kcc_z1_tbl_gt
+```
+
+## ***Trewartha Climate Group Changes Summary***
+```{r}
+#| label: trewartha_summary
+tcc_z1_chg_df <- fn_climate_group_changes(tcc_zones_sf)
+tcc_z1_tbl_gt <- fn_build_summary_table(tcc_z1_chg_df, "Trewartha")
+tcc_z1_tbl_gt
+```
+
+## ***Climate Group Visualization***
+```{r}
+#| label: visualize
+plot_data <- kcc_zones_sf  |>
+  select(cz1) |>
+  rename(Group = cz1)
+p1 <- fn_create_map(plot_data, "Köppen", kcc_palette, kcc_labels)
+p1
+
+plot_data <- tcc_zones_sf |>
+  select(cz1) |>
+  rename(Group = cz1)
+p2 <- fn_create_map(plot_data, "Trewartha", tcc_palette, tcc_labels)
+p2
+```

@@ -1,0 +1,165 @@
+---
+title: "Reference for Global Climate Classification Changes"
+format: html
+---
+
+## To D:
+
+book format
+ + fix right margin
+ + update the overview steps
+
+01_download_data
+ + 
+02_aggregate_data
+ + 
+03_derive_determinants
+ + 
+04_classify_types
+ + 
+05_analyze_changes
+ + 
+
+
+
+
+## ***Packages***
+
+```{r}
+#| label: pkg
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(rnaturalearth)
+})
+```
+
+
+## ***Directories***
+
+```{r paths}
+dir_rf <- "_data/00_reference/"
+```
+
+## ***Trewartha Climate Zones***
+
+### Group
+
+```{r}
+tcc_group <- c(
+  "A", "B", "C", "D", "E", "F"
+)
+tcc_group_hex <- c(
+  "A" = "#56b482",  # 0/10/20 #1a9850, #56b482, #74c29b
+  "B" = "#f09758",  # 0/10/20 #eb8034, #f09758, #f9c5a0
+  "C" = "#2255a4",  # 0/10/20 #2255a4, #5c89c0, #79a3ce
+  "D" = "#c23734",  # 0/10/20 #b2182b, #d35362, #dd7276
+  "E" = "#33929b",  # 0/10/20 #017783, #33929b, #99c8cb
+  "F" = "#9674c1"   # 0/10/20 #5e3c99, #7a60ad, #9674c1
+)
+
+tcc_group_palette  <- data.frame(
+  code = tcc_group, 
+  hex = tcc_group_hex
+)
+
+fil <- "tcc_group_palette.csv"
+pth <- paste0(dir_rf,fil)
+write_csv(tcc_group_palette, pth)
+
+```
+
+### Type
+
+```{r}
+tcc_type <- c(
+  "Ar", "Aw",
+  "BW", "BS",
+  "Cs", "Cw", "Cf",
+  "Do", "Dc",
+  "E",
+  "Ft", "Fi"
+)
+
+tcc_type_labels <- c(
+  Ar="Tropical Rainforest",        Aw="Tropical Savanna (dry season)",
+  BW="Desert (Arid)",              BS="Steppe (Semiarid)",
+  Cs="Mediterranean (dry summer)", Cw="Subtropical (dry winter)",
+  Cf="Subtropical (no dry season)",
+  Do="Temperate (Oceanic)",        Dc="Temperate (Continental)",
+  E="Boreal (Subarctic)",
+  Ft="Tundra",                     Fi="Ice Cap"
+)
+
+tcc_type_hex <- c(
+  "Ar" = "#85080c", "Aw" = "#cb1e0a",
+  "BW" = "#fede49", "BS" = "#f09036",
+  "Cs" = "#a0c402", "Cw" = "#188473", "Cf" = "#009735",
+  "Do" = "#02add7", "Dc" = "#1552a2",
+  "E"  = "#017783",
+  "Ft" = "#7a60ad", "Fi" = "#9674c1"  
+)
+#   "E"  = "#b2559c",
+
+tcc_type_palette  <- data.frame(
+  typ = tcc_type,
+  hex = tcc_type_hex,
+  lbl = tcc_type_labels
+)
+
+fil <- "tcc_type_palette.csv"
+pth <- paste0(dir_rf,fil)
+write_csv(tcc_type_palette, pth)
+
+```
+
+## Download natural earth coastline
+
+```{r}
+dir <- dir_rf 
+fil <- "global-coastline.gpkg"
+pth <- paste(dir, fil, sep = "")
+if (!file.exists(pth))  {
+  ne_coastline_sf <-
+    ne_download(
+      scale = 10,
+      type = "coastline",
+      category = "physical",
+      returnclass = "sf"
+    )
+  st_write(ne_coastline_sf, pth, delete_dsn = TRUE, quiet = TRUE)
+}
+```
+
+### Transform global coastline
+
+```{r transform-ne-coastline}
+
+fn_transform_ne_coastline <- function(dir_download) {
+  # Create a single coastline multiline, making sure geometries are valid
+  # (eliminates extra horizontal line on map)
+
+  dir <- dir_rf 
+  fil <- "global-coastline.gpkg"
+  pth <- paste(dir, fil, sep = "")
+  coastline_sf <- st_read(pth, quiet = TRUE)
+
+  coastline_sf <- coastline_sf |>
+    select(geom) |>
+    mutate(id = "world") |>
+    group_by(id) |>
+    st_make_valid() |>
+    summarise()
+  return(coastline_sf)
+}
+
+dir <- dir_rf 
+fil <- "global-coastline.gpkg"
+pth <- paste(dir, fil, sep = "")
+
+if (!file.exists(pth))  {
+  coastline_sf <- fn_transform_ne_coastline(dir_download)
+  st_write(coastline_sf, pth, delete_dsn = TRUE, quiet = TRUE)
+}
+
+```
+

@@ -1,0 +1,345 @@
+ ---
+title: "Classify Types"
+---
+
+Use the classification metrics to calculate the climate type for each grid cell, using the Koppen-Trewartha classification system.
+
+## ***Climate Periods***
+```{r}
+#| label: periods
+# Climatological Reference Period
+crp = "crp"
+crp_beg <- 1961
+crp_end <- 1990
+crp_lbl <- paste("CRP ", crp_beg, "-", crp_end, sep = "")
+# Recent Climate Period
+rcp = "rcp"
+rcp_beg <- 2015
+rcp_end <- 2024
+rcp_lbl <- paste("RCP ", rcp_beg, "-", rcp_end, sep = "")
+```
+
+## ***Packages***
+```{r}
+#| label: packages
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(sf)
+  library(arrow)
+  library(gt)
+  library(units)
+})
+```
+
+## ***Directories***
+```{r}
+#| label: directories
+dir_rf <- "_data/00_reference/"
+dir_rd <- "_data/03_transformed_data/"
+dir_wr <- "_data/04_classified_data/"
+```
+
+## ***Palettes***
+```{r}
+#| label: palettes
+pth <- paste0(dir_rf,"tcc_group_palette.csv")
+tcc_group_palette <- read_csv(pth, show_col_types = FALSE)
+pth <- paste0(dir_rf,"tcc_type_palette.csv")
+tcc_type_palette <- read_csv(pth, show_col_types = FALSE)
+```
+
+## ***Map Projections***
+```{r}
+#| label: projections
+rbn_prj <- "ESRI:54030"
+```
+
+## ***Global Coastline***
+```{r}
+#| label: coastline
+dir <- dir_rf
+fil <- "global-coastline.gpkg"
+pth <- paste(dir, fil, sep = "")
+coastline_sf <- st_read(pth, quiet=TRUE)
+```
+
+## ***Classification metrics***
+```{r}
+#| label: metrics
+pth <- paste(dir_rd, "crp_determinants.parquet", sep = "")
+crp_metrics_df <- read_parquet(pth) 
+pth <- paste(dir_rd, "rcp_determinants.parquet", sep = "")
+rcp_metrics_df <- read_parquet(pth) 
+```
+
+## ***Functions***
+
+
+```{r}
+#| label: fn_classify_tcc
+fn_classify_tcc <- function(df) {
+  df <- df |>
+    mutate(
+      z1 = case_when(
+        tmax < 10 ~ "F",
+        ptot < athr ~ "B",
+        tmin >= 18 ~ "A",
+        tg10 >= 8 ~ "C",
+        tg10 >= 4 ~ "D",
+        tg10 >= 1 ~ "E",
+        TRUE ~ "X"
+      ),
+      zn = ""
+    )
+
+  df <- df |>
+    mutate(
+      z2 = case_when(
+        z1 == "A" & (pl60 <= 2) ~ "r",
+        z1 == "A" ~ "w",
+        z1 == "B" & (ptot < athr/2) ~ "W",
+        z1 == "B" ~ "S",
+
+        z1 == "C" & (wtot >= stot * 3) & (pmin < 30) & (ptot < 890) ~ "s",
+        z1 == "C" & (stot >= wtot * 10) ~ "w",
+        z1 == "C" ~ "f",
+
+        z1 == "D" & (tmin > 0) ~ "o",
+        z1 == "D" ~ "c",
+        z1 == "F" & (tmax > 0) ~ "t",
+        z1 == "F" ~ "i",
+        TRUE ~ ""
+      ),
+      zn = paste(z1, z2, sep = "")
+    )
+  df <- df|> select(lon, lat, area, lsm, zn)
+  return(df)
+}
+```
+
+## ***Apply classification system***
+```{r}
+#| label: classify
+df1 <- fn_classify_tcc(crp_metrics_df)
+df2 <- fn_classify_tcc(rcp_metrics_df)
+tcc_df <- df1 %>% 
+  left_join(df2 , by = c("lon", "lat", "lsm")) |>
+  rename(czn = zn.x, rzn = zn.y, area = area.x) |>
+  select(lon, lat, lsm, area, czn, rzn) |>
+  mutate(czn = factor(czn, levels = tcc_type_palette$typ)) |>
+  mutate(rzn = factor(rzn, levels = tcc_type_palette$typ))
+```
+
+## ***Convert to spatial data frames***
+```{r}
+#| label: spatial
+tcc_sf <- st_as_sf(tcc_df, coords = c("lon", "lat"), crs = 4326)
+```
+
+## ***Combine geometries***
+```{r}
+#| label: combine
+tcc_cmb_sf <- tcc_sf |>
+  filter(lsm > 0) |>
+  summarise(
+    geometry = st_combine(geometry),
+    mkm = sum(area*lsm),
+    .by = c(czn, rzn)
+  ) |>
+  mutate(cz1 = substr(czn, 1, 1)) |>
+  mutate(rz1 = substr(rzn, 1, 1)) |>
+  mutate(pct = round(mkm / sum(mkm) * 100, 3)) |>
+  select(czn, cz1, rzn, rz1, mkm, pct, geometry) |>
+  arrange(czn, rzn) 
+tcc_cmb_sf <- st_set_crs(tcc_cmb_sf, 4326)
+```
+
+## ***Save Results***
+```{r}
+#| label: save
+fil <- "tcc_classifications.gpkg"
+dir <- dir_wr
+pth <- paste0(dir,fil)
+st_write(tcc_cmb_sf, pth, delete_dsn = TRUE, quiet = TRUE)
+```
+
+```{r}
+#| label: fn_create_map
+fn_create_map <- function(plot_data, palette, cp_lbl) {
+
+  p <- ggplot(plot_data) +
+    geom_sf(aes(color = type), size = 0.01) +
+    scale_color_manual(values = palette, drop = FALSE) +
+    geom_sf(
+      data = coastline_sf,
+      color = "black",
+      linewidth = 0.1
+    ) +
+    coord_sf(crs = rbn_prj) +
+    labs(
+      title = "Koppen-Trewartha Climate Classification",
+      subtitle = cp_lbl,
+      color = "Types"
+    ) +
+    guides(
+      color = guide_legend(
+        override.aes = list(
+          size = 5 # legend point size only
+        )
+      )
+    )
+    return(p)
+}
+```
+
+```{r}
+#| label: fn_build_summary_table
+fn_build_summary_table <- function(df, cp) {
+  tbl <- df |>
+    gt(rowname_col = "typ" ) |>
+    tab_stubhead(label = "Type")|>
+    tab_header(
+      title = paste("Classification Summary:",cp),
+      subtitle = "Sorted by Percentage of Area"
+    ) |>
+
+    # 2) center body *and* summary cells for Area
+    cols_align(align = "center", columns = mkm) |>
+    # 1) center the column header
+    tab_style(
+      style = cell_text(align = "center"),
+      locations = cells_column_labels(columns = mkm)
+    ) |>
+
+    cols_label(
+      lbl = "Description",
+      mkm = "Area (Mkm²)",
+      pct = "%"
+    ) |>
+
+    fmt_number(columns = c(mkm), decimals = 1) |>
+    fmt_number(columns = c(pct), decimals = 2) |>
+    grand_summary_rows(
+      columns = c(mkm, pct),
+      fns = list("Total" = ~ sum(.)),
+      fmt = list(~ fmt_number(.x, decimals = 1))
+    ) 
+}
+```
+
+## ***Summary Table***
+
+```{r}
+#| label: build_t1
+crp_tbl_df <- tcc_cmb_sf |>
+  st_drop_geometry() |>
+  rename(typ = czn) |>
+  select(typ, mkm, pct) |>
+  summarise(
+    mkm = sum(mkm),
+    pct = sum(pct),
+    .by = typ
+  )|>
+  arrange(typ)
+
+df1 <- crp_tbl_df
+
+df2 <- tcc_type_palette |> select(typ, lbl)
+
+dfj <- df1 |>
+   left_join(df2, by = "typ") |>
+   select(typ,lbl,mkm,pct)
+
+t1 <- fn_build_summary_table(dfj, crp_lbl)
+```
+
+```{r}
+#| label: build_t2
+rcp_tbl_df <- tcc_cmb_sf |>
+  st_drop_geometry() |>
+  rename(typ = rzn) |>
+  select(typ, mkm, pct) |>
+  summarise(
+    mkm = sum(mkm),
+    pct = sum(pct),
+    .by = typ
+  ) |>
+  arrange(typ)
+
+df1 <- rcp_tbl_df
+
+df2 <- tcc_type_palette |> select(typ, lbl)
+
+dfj <- df1 |>
+   left_join(df2, by = "typ") |>
+   select(typ,lbl,mkm,pct)
+
+t2 <- fn_build_summary_table(dfj, rcp_lbl)
+```
+## ***Climate Group Visualization***
+
+```{r}
+#| label: v1
+plot_data <- tcc_cmb_sf |>
+  select(czn) |>
+  rename(type = czn)
+
+type_levels <- tcc_type_palette$typ
+
+type_palette <- setNames(
+  tcc_type_palette$hex,
+  tcc_type_palette$typ
+)
+
+plot_data <- plot_data |>
+  mutate(type = factor(type, levels = type_levels))
+
+plot_palette <- type_palette[levels(plot_data$type)]
+
+v1 <- fn_create_map(plot_data,plot_palette,crp_lbl)
+```
+
+```{r}
+#| label: v2
+plot_data <- tcc_cmb_sf |>
+  select(rzn) |>
+  rename(type = rzn)
+
+type_levels <- tcc_type_palette$typ
+
+type_palette <- setNames(
+  tcc_type_palette$hex,
+  tcc_type_palette$typ
+)
+
+plot_data <- plot_data |>
+  mutate(type = factor(type, levels = type_levels))
+
+plot_palette <- type_palette[levels(plot_data$type)]
+
+v2 <- fn_create_map(plot_data,plot_palette,rcp_lbl)
+```
+
+```{r}
+#| label: t1-v1
+t1
+```
+```{r}
+#| label: v1_hw
+#| fig-width: 10
+#| fig-aspect: .7   
+#| out-width: 100%
+v1 
+```
+```{r}
+#| label: t2-v2
+t2
+```
+
+```{r}
+#| label: v2_hw
+#| fig-width: 10
+#| fig-aspectt: .7  
+#| out-width: 100%
+v2
+```

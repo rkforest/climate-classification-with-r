@@ -1,0 +1,217 @@
+---
+title: "Aggregate Climate"
+engine: jupyter
+jupyter: myproj
+---
+
+Aggregate temperature and precipitation data for each climate period by longitude, latitude and month number producing a single value per grid cell and month number.  Reshape data from long form to wide form (one row per grid cell with each monthly value in a separate column) to facillite the deriving of classification metrics.
+
+## ***Climate Periods***
+
+```{python}
+#| label: climate_periods
+# Climatological Reference Period
+crp = "crp"
+crp_beg = 1961
+crp_end = 1990
+# Recent Climate Period
+rcp = "rcp"
+rcp_beg = 2015
+rcp_end = 2024
+```
+
+## ***Packages***
+```{python}
+#| label: packages
+import xarray as xr
+import pandas as pd
+import numpy as np
+import os
+from pathlib import Path
+from datetime import datetime
+```
+
+## ***Directories***
+```{python}
+#| label: directories
+dir_rd = "_data/01_downloaded_data/"
+dir_wr = "_data/02_aggregated_data/"
+```
+
+## ***Land Sea Mask***
+```{python}
+#| label: read_land_sea_mask
+fil = "land_sea_mask.nc"
+pth = Path(dir_rd) / fil
+ds = xr.open_dataset(
+    pth,
+    engine="h5netcdf",
+    chunks="auto", 
+    decode_cf=True
+)
+df_lsm = ds["lsm"].to_dataframe().reset_index()
+df_lsm = df_lsm.rename(columns={"longitude": "lon", "latitude": "lat"})
+df_lsm = df_lsm[["lon","lat","lsm"]]
+```
+
+## ***Functions***
+
+### Aggregate Climate
+
+```{python}
+#| label: fn_aggregate_climate
+def fn_aggregate_climate(
+    cp: str,
+    cv: str,
+    vnm: str):
+    fil = cp + "_downloaded_" + cv + ".nc"
+    pth = Path(dir_rd) / fil
+    ds = xr.open_dataset(
+        pth,
+        engine="h5netcdf",
+        chunks="auto", 
+        decode_cf=True
+    )
+    ds = ds.drop_vars("number")
+    # extract month number from time variable
+    ds = ds.assign_coords(mth=ds["valid_time"].dt.month)
+    # group by month number
+    grp_vnm_da = ds[vnm].groupby("mth").mean("valid_time", keep_attrs=True)
+    # convert to pandas df
+    df_vnm = grp_vnm_da.to_dataframe().reset_index()
+    # rename lon and lat columns
+    df = df_vnm.rename(columns={"longitude": "lon", "latitude": "lat"})
+
+    # convert lon values from 0 to 360  to -180 to 180
+    df["lon"] = np.where(df["lon"] > 180, df["lon"] - 360, df["lon"])
+    # modify variables based on type: t = temperature, p = precipitation
+    if cv == "t":
+        # convert temperature from kelvin to celsius
+        df["t"] = df["t2m"] - 273.15
+        # select columns to keep
+        df = df[["lon", "lat", "mth", "t"]]
+    elif cv == "p":
+        # since era5 precipitation is stored as a daily average, multiply by days in month
+        ds["ndy"] = ds["valid_time"].dt.days_in_month
+        # climate perdiod average number of days in each month number (12 values)
+        da_ndy = ds["ndy"].groupby("mth").mean("valid_time", keep_attrs=True)
+        # convert to df before merging
+        df_ndy = da_ndy.to_dataframe().reset_index()
+        # merge with precipation df
+        df = df.merge(df_ndy[["mth", "ndy"]], on="mth", how="left")
+        # conversion from daily avg in m to monthly avg in mm
+        df["p"] = df["tp"] * df["ndy"] * 1000
+        # select columns to keep
+        df = df[["lon", "lat", "mth", "p"]]
+    # downcast columns to reduce size
+    df = df.astype({"lon": "float32", "lat": "float32"})
+    df = df.astype({"mth": "int8"})
+    return(df)
+```
+
+### Pivot to wide form
+
+```{python}
+#| label: fn_pivot_to_wide_form
+def fn_pivot_to_wide_form(
+    df: pd.DataFrame,
+    cp: str,
+    cv: str):
+
+    # Pivot to wide form
+    wide_df = df.pivot(index=["lon", "lat"], columns="mth", values=cv)
+    # Ensure columns are in month order 1–12
+    wide_df = wide_df.reindex(columns=range(1, 13))
+    # Rename columns 1..12 to m1..m12
+    wide_df.columns = [f"m{m}" for m in wide_df.columns]
+    # Reset index to keep lon and lat as normal columns
+    wide_df = wide_df.reset_index()
+
+    # add land sea mask based on lon and lat
+    wide_df = wide_df.merge(df_lsm, on=["lon", "lat"],  how="left")
+
+    return(wide_df)
+
+```
+
+
+### Calculate Grid Area
+
+```{python}
+#| label: fn_calculate_grid_area
+
+def fn_calculate_grid_area(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
+    earth_radius_km = 6371 # km
+    lat_grid_degrees = 0.25
+    lon_grid_degrees = 0.25
+
+    # convert degrees to radians
+    lat_radians = np.radians(df["lat"])
+    lat_grid_radians = np.radians(lat_grid_degrees)
+    lon_grid_radians = np.radians(lon_grid_degrees)
+
+    # cell area in million km²
+    df = df.assign(
+        area=(earth_radius_km**2 *
+              lon_grid_radians *
+              (np.sin(lat_radians + lat_grid_radians / 2) -
+               np.sin(lat_radians - lat_grid_radians / 2))) / 1e6
+    )
+
+    # reorder columns: lat, lon, area, lsm, then everything else
+    cols = ["lat", "lon", "area", "lsm"]
+    other_cols = [c for c in df.columns if c not in cols]
+    df = df[cols + other_cols]
+
+    return df
+
+```
+
+## ***Aggregate Data***
+
+```{python}
+#| label: aggregate_data
+start = datetime.now()
+
+df1 = fn_aggregate_climate(crp, "t", "t2m")
+df2 = fn_aggregate_climate(crp, "p", "tp")
+df3 = fn_aggregate_climate(rcp, "t", "t2m")
+df4 = fn_aggregate_climate(rcp, "p", "tp")
+
+wide_df1 = fn_pivot_to_wide_form(df1, crp, "t")
+wide_df2 = fn_pivot_to_wide_form(df2, crp, "p")
+wide_df3 = fn_pivot_to_wide_form(df3, rcp, "t")
+wide_df4 = fn_pivot_to_wide_form(df4, rcp, "p")
+
+area_df1 = fn_calculate_grid_area(wide_df1)
+area_df2 = fn_calculate_grid_area(wide_df2)
+area_df3 = fn_calculate_grid_area(wide_df3)
+area_df4 = fn_calculate_grid_area(wide_df4)
+
+end = datetime.now()
+print("elapsed time: " + str(end - start))
+```
+
+## ***Save Results***
+
+```{python}
+
+fil = "crp_aggregated_t.parquet"
+pth = Path(dir_wr) / fil
+area_df1.to_parquet(pth, index=False)
+
+fil = "crp_aggregated_p.parquet"
+pth = Path(dir_wr) / fil
+area_df2.to_parquet(pth, index=False)
+
+fil = "rcp_aggregated_t.parquet"
+pth = Path(dir_wr) / fil
+area_df3.to_parquet(pth, index=False)
+
+fil = "rcp_aggregated_p.parquet"
+pth = Path(dir_wr) / fil
+area_df4.to_parquet(pth, index=False)
+
+```

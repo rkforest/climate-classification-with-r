@@ -1,0 +1,47 @@
+<!-- ---
+title: "Global Climate Classification Changes"
+subtitle: "1961–1990 vs 2015–2024"
+author: "Rick Forest"
+description: "A Quarto book that downloads, transforms, classifies, and visualizes climate data to compare a Recent Period with a Climate Standard Reference Period."
+--- -->
+
+# Introduction {#sec-intro .unnumbered}
+
+## Overview
+
+This project uses a multi-stage pipeline::
+
+1. **Download ERA5 Data** – 
+  + Download and save ERA5 climate reanalysis datasets.
+2. **Compute Climate Normals** – 
+  + Calculate period climate averages (temperature & precipitation).
+3. **Derive Classification Metrics** – 
+  + Aggregate seasonal/annual statistics required for classification.
+4. **Apply Climate Classification Systems** -
+  + Categorize using the Koppen and Trewartha climate classification systems.
+5. **Analyze Climate Group Changes** -
+  + Calculate and visualize the climate group changes.
+
+Use the sidebar to navigate, or read in order using the chapter links below.
+
+## Chapters
+
+- [01 — Download Data](01_download_data.qmd)  
+- [02 — Aggregate Data](02_aggregate_data.qmd)  
+- [03 — Derive Determinants](03_derive_determinants.qmd)  
+- [04 — Classify Types](04_classify_types.qmd)  
+- [05 — Analyze Changes](05_analyze_changes.qmd)  
+
+## How to Render
+
+Render the full book:
+```bash
+quarto render
+```
+
+## How to Preview
+
+Live preview (auto-reload in your browser):
+```bash
+quarto preview
+```
