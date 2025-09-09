@@ -1,12 +1,12 @@
 ---
-title: "Download Data"
+title: "Download ERA5 Climate Data"
 engine: jupyter
 jupyter: myproj
 ---
 
 Download and save ERA5 climate reanalysis datasets using the Climate Data Store CDSAPI:  <https://cds.climate.copernicus.eu/how-to-api>.
 
-## ***Climate Periods***
+## ***Periods***
 ```{python}
 #| label: climate periods
 # Climatological Reference Period
@@ -34,7 +34,7 @@ import time
 ## ***Directories***
 ```{python}
 #| label: directories
-dir_wr = "_data/01_downloaded_data/"
+dir_wr = "data/01_downloaded_data/"
 ```
 
 ## ***Functions***
@@ -142,10 +142,10 @@ def fn_download_land_sea_mask(
     return(log_df)
 ```
 
-## ***Download Data***
+## ***Main Process***
 
 ```{python}
-#| label: download_data
+#| label: main_process
  
 log_df = pd.DataFrame(columns=["File Name", "Time (mm:ss)"])
 
@@ -163,7 +163,7 @@ log_df = fn_download_land_sea_mask(pth, log_df)
 
 ```
 
-## ***Download Summary***
+## ***Summary***
 
 ```{python}
 #| label: build_summary

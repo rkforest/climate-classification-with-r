@@ -1,47 +1,43 @@
-<!-- ---
-title: "Global Climate Classification Changes"
-subtitle: "1961–1990 vs 2015–2024"
-author: "Rick Forest"
-description: "A Quarto book that downloads, transforms, classifies, and visualizes climate data to compare a Recent Period with a Climate Standard Reference Period."
---- -->
-
+---
+title: "Introduction"
+---
 # Introduction
 
-## Overview
+This project analyzes global climate classification changes by comparing climate data from a recent period (2015–2024) with the WMO Climatological Reference Period (1961–1990).
 
-This project uses a multi-stage pipeline::
+The analysis will be done by applying the Köppen-Trewartha climate classification system to downloaded ERA5 climate data, analyzing and visualizing the climate classification shifts that have already occurred.
 
-1. **Download ERA5 Data** – 
+## Process
+
+1. **Download ERA5 Data**
   + Download and save ERA5 climate reanalysis datasets.
-2. **Compute Climate Normals** – 
-  + Calculate period climate averages (temperature & precipitation).
-3. **Derive Classification Metrics** – 
-  + Aggregate seasonal/annual statistics required for classification.
-4. **Apply Climate Classification Systems** -
-  + Categorize using the Koppen and Trewartha climate classification systems.
-5. **Analyze Climate Group Changes** -
-  + Calculate and visualize the climate group changes.
+2. **Aggregate Climate Variables**
+  + Compute climate period averages (temperature & precipitation).
+3. **Derive Classification Determinants**
+  + Derive aggregate seasonal/annual statistics required for classification.
+4. **Assign Köppen-Trewartha Climate Types**
+  + Apply Köppen-Trewartha classification definitions to all grid cells.  
+5. **Analyze Classification Changes**
+  + Identify and visualize classification changes between periods.  
 
 Use the sidebar to navigate, or read in order using the chapter links below.
 
-## Chapters
+## Modules
 
-- [01 — Download Data](01_download_data.qmd)  
-- [02 — Aggregate Data](02_aggregate_data.qmd)  
-- [03 — Derive Determinants](03_derive_determinants.qmd)  
-- [04 — Classify Types](04_classify_types.qmd)  
-- [05 — Analyze Changes](05_analyze_changes.qmd)  
+- [01 — Download ERA5 Climate Data](01_download_data.qmd)  
+- [02 — Aggregate Climate Variables](02_aggregate_data.qmd)  
+- [03 — Derive Classification Determinants](03_derive_determinants.qmd)  
+- [04 — Assign Köppen-Trewartha Types](04_assign_types.qmd)  
+- [05 — Analyze Classification Changes](05_analyze_changes.qmd)  
 
-## How to Render
+## Render
 
 Render the full book:
 ```bash
 quarto render
 ```
 
-## How to Preview
-
-Live preview (auto-reload in your browser):
+Live preview (auto-reload in the browser):
 ```bash
 quarto preview
 ```

@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Rick Forest">
-<meta name="description" content="This project analyzes global climate classification changes by comparing climate data from a recent period (2015–2024) with the WMO Climatological Reference Period (1961–1990).">
+<meta name="dcterms.date" content="2025-09-08">
 
-<title>Global Climate Classification Change Analysis</title>
+<title>Climate Classification Changes</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -77,7 +77,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-e1a5c8363afafaef2c763b6775fbf3ca.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-c6401791a79187d57067e869b1585694.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-1756dc621931fd2b644d66715879eefc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -109,7 +109,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </head>
 
-<body class="nav-sidebar docked quarto-light">
+<body class="nav-sidebar floating quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -130,10 +130,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- content -->
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
     <div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
-      <a href="./">Global Climate Classification Change Analysis</a> 
+      <a href="./">Climate Classification Changes</a> 
     </div>
       </div>
         <div class="mt-2 flex-shrink-0 align-items-center">
@@ -152,70 +152,64 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./01_download_data.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Download Data</span></span></a>
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Download ERA5 Climate Data</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./02_aggregate_data.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Aggregate Climate</span></span></a>
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Aggregate Climate Variables</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./03_derive_determinants.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Derive Metrics</span></span></a>
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Derive Classification Determinants</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./04_classify_types.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Classify Types</span></span></a>
+  <a href="./04_assign_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Assign Classification Types</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./05_analyze_changes.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Analyze Changes</span></span></a>
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Analyze Classification Changes</span></span></a>
   </div>
 </li>
     </ul>
     </div>
-    <nav id="TOC" role="doc-toc" class="toc-active">
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
   <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction"><span class="header-section-number">1</span> Introduction</a>
   <ul class="collapse">
-  <li><a href="#overview" id="toc-overview" class="nav-link" data-scroll-target="#overview"><span class="header-section-number">1.1</span> Overview</a></li>
-  <li><a href="#chapters" id="toc-chapters" class="nav-link" data-scroll-target="#chapters"><span class="header-section-number">1.2</span> Chapters</a></li>
-  <li><a href="#how-to-render" id="toc-how-to-render" class="nav-link" data-scroll-target="#how-to-render"><span class="header-section-number">1.3</span> How to Render</a></li>
-  <li><a href="#how-to-preview" id="toc-how-to-preview" class="nav-link" data-scroll-target="#how-to-preview"><span class="header-section-number">1.4</span> How to Preview</a></li>
+  <li><a href="#process" id="toc-process" class="nav-link" data-scroll-target="#process"><span class="header-section-number">1.1</span> Process</a></li>
+  <li><a href="#modules" id="toc-modules" class="nav-link" data-scroll-target="#modules"><span class="header-section-number">1.2</span> Modules</a></li>
+  <li><a href="#renderview" id="toc-renderview" class="nav-link" data-scroll-target="#renderview"><span class="header-section-number">1.3</span> Render/View</a></li>
   </ul></li>
   </ul>
 </nav>
-</nav>
-<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
-<!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
     </div>
 <!-- main -->
-<main class="content column-page-right" id="quarto-document-content">
+<main class="content column-body" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<div class="quarto-title-block"><div><h1 class="title">Global Climate Classification Change Analysis</h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
-<p class="subtitle lead">Recent Period vs WMO Climatological Reference Period</p>
-</div>
-
-<div>
-  <div class="description">
-    This project analyzes global climate classification changes by comparing climate data from a recent period (2015–2024) with the WMO Climatological Reference Period (1961–1990).
-  </div>
+<div class="quarto-title-block"><div><h1 class="title">Climate Classification Changes</h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+<p class="subtitle lead">Recent Period (2015–2024) vs WMO Climatological Reference Period (1961–1990)</p>
 </div>
 
 
-<div class="quarto-title-meta column-page-right">
+
+<div class="quarto-title-meta column-body">
 
     <div>
     <div class="quarto-title-meta-heading">Author</div>
@@ -224,32 +218,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           </div>
   </div>
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">September 8, 2025</p>
+    </div>
+  </div>
   
     
   </div>
   
-<div>
-  <div class="abstract">
-    <div class="block-title">Abstract</div>
-    The analysis will be done by applying the Köppen-Trewartha climate classification system to downloaded ERA5 climate data, analyzing and visualizing the climate classification shifts that have already occurred.
-  </div>
-</div>
 
 
 </header>
 
 
-<!-- ---
-title: "Global Climate Classification Changes"
-subtitle: "1961–1990 vs 2015–2024"
-author: "Rick Forest"
-description: "A Quarto book that downloads, transforms, classifies, and visualizes climate data to compare a Recent Period with a Climate Standard Reference Period."
---- -->
 <section id="introduction" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
-<section id="overview" class="level2" data-number="1.1">
-<h2 data-number="1.1" class="anchored" data-anchor-id="overview"><span class="header-section-number">1.1</span> Overview</h2>
-<p>This project uses a multi-stage pipeline::</p>
+<p>This project analyzes global climate classification changes by comparing climate data from a recent period (2015–2024) with the WMO Climatological Reference Period (1961–1990).</p>
+<p>The analysis will be done by applying the Köppen-Trewartha climate classification system to downloaded ERA5 climate data, analyzing and visualizing the climate classification shifts that have already occurred.</p>
+<section id="process" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="process"><span class="header-section-number">1.1</span> Process</h2>
 <ol type="1">
 <li><strong>Download ERA5 Data</strong> –</li>
 </ol>
@@ -257,53 +246,51 @@ description: "A Quarto book that downloads, transforms, classifies, and visualiz
 <li>Download and save ERA5 climate reanalysis datasets.</li>
 </ul>
 <ol start="2" type="1">
-<li><strong>Compute Climate Normals</strong> –</li>
+<li><strong>Aggregate Climate Variables</strong> –</li>
 </ol>
 <ul>
-<li>Calculate period climate averages (temperature &amp; precipitation).</li>
+<li>Compute climate period averages (temperature &amp; precipitation).</li>
 </ul>
 <ol start="3" type="1">
-<li><strong>Derive Classification Metrics</strong> –</li>
+<li><strong>Derive Classification Determinants</strong> –</li>
 </ol>
 <ul>
-<li>Aggregate seasonal/annual statistics required for classification.</li>
+<li>Derive aggregate seasonal/annual statistics required for classification.</li>
 </ul>
 <ol start="4" type="1">
-<li><strong>Apply Climate Classification Systems</strong> -</li>
+<li><strong>Assign Köppen-Trewartha Climate Types</strong></li>
 </ol>
 <ul>
-<li>Categorize using the Koppen and Trewartha climate classification systems.</li>
+<li>Apply Köppen-Trewartha classification definitions to all grid cells.<br>
+</li>
 </ul>
 <ol start="5" type="1">
-<li><strong>Analyze Climate Group Changes</strong> -</li>
+<li><strong>Analyze Classification Changes</strong></li>
 </ol>
 <ul>
-<li>Calculate and visualize the climate group changes.</li>
+<li>Identify and visualize classification changes between periods.</li>
 </ul>
 <p>Use the sidebar to navigate, or read in order using the chapter links below.</p>
 </section>
-<section id="chapters" class="level2" data-number="1.2">
-<h2 data-number="1.2" class="anchored" data-anchor-id="chapters"><span class="header-section-number">1.2</span> Chapters</h2>
+<section id="modules" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="modules"><span class="header-section-number">1.2</span> Modules</h2>
 <ul>
-<li><a href="./01_download_data.html">01 — Download Data</a><br>
+<li><a href="./01_download_data.html">01 — Download ERA5 Climate Data</a><br>
 </li>
-<li><a href="./02_aggregate_data.html">02 — Aggregate Data</a><br>
+<li><a href="./02_aggregate_data.html">02 — Aggregate Climate Variables</a><br>
 </li>
-<li><a href="./03_derive_determinants.html">03 — Derive Determinants</a><br>
+<li><a href="./03_derive_determinants.html">03 — Derive Classification Determinants</a><br>
 </li>
-<li><a href="./04_classify_types.html">04 — Classify Types</a><br>
+<li><a href="./04_assign_types.html">04 — Assign Köppen-Trewartha Types</a><br>
 </li>
-<li><a href="./05_analyze_changes.html">05 — Analyze Changes</a></li>
+<li><a href="./05_analyze_changes.html">05 — Analyze Classification Changes</a></li>
 </ul>
 </section>
-<section id="how-to-render" class="level2" data-number="1.3">
-<h2 data-number="1.3" class="anchored" data-anchor-id="how-to-render"><span class="header-section-number">1.3</span> How to Render</h2>
+<section id="renderview" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="renderview"><span class="header-section-number">1.3</span> Render/View</h2>
 <p>Render the full book:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="how-to-preview" class="level2" data-number="1.4">
-<h2 data-number="1.4" class="anchored" data-anchor-id="how-to-preview"><span class="header-section-number">1.4</span> How to Preview</h2>
-<p>Live preview (auto-reload in your browser):</p>
+<p>Live preview (auto-reload in the browser):</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> preview</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 
@@ -763,62 +750,58 @@ description: "A Quarto book that downloads, transforms, classifies, and visualiz
     }
   });
   </script>
-<nav class="page-navigation column-page-right">
+<nav class="page-navigation column-body">
   <div class="nav-page nav-page-previous">
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./01_download_data.html" class="pagination-link" aria-label="Download Data">
-        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Download Data</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./01_download_data.html" class="pagination-link" aria-label="Download ERA5 Climate Data">
+        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Download ERA5 Climate Data</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
-<div class="sourceCode" id="cb3" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- ---</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">title: "Global Climate Classification Changes"</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">subtitle: "1961–1990 vs 2015–2024"</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">author: "Rick Forest"</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">description: "A Quarto book that downloads, transforms, classifies, and visualizes climate data to compare a Recent Period with a Climate Standard Reference Period."</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">--- --&gt;</span></span>
+<div class="sourceCode" id="cb3" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Introduction"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu"># Introduction</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>This project analyzes global climate classification changes by comparing climate data from a recent period (2015–2024) with the WMO Climatological Reference Period (1961–1990).</span>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="fu"># Introduction</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>The analysis will be done by applying the Köppen-Trewartha climate classification system to downloaded ERA5 climate data, analyzing and visualizing the climate classification shifts that have already occurred.</span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">## Overview</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">## Process</span></span>
 <span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>This project uses a multi-stage pipeline::</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Download ERA5 Data** – </span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="ss">  + </span>Download and save ERA5 climate reanalysis datasets.</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Compute Climate Normals** – </span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="ss">  + </span>Calculate period climate averages (temperature &amp; precipitation).</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Derive Classification Metrics** – </span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="ss">  + </span>Aggregate seasonal/annual statistics required for classification.</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**Apply Climate Classification Systems** -</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="ss">  + </span>Categorize using the Koppen and Trewartha climate classification systems.</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**Analyze Climate Group Changes** -</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="ss">  + </span>Calculate and visualize the climate group changes.</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Download ERA5 Data**</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="ss">  + </span>Download and save ERA5 climate reanalysis datasets.</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Aggregate Climate Variables**</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="ss">  + </span>Compute climate period averages (temperature &amp; precipitation).</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Derive Classification Determinants**</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="ss">  + </span>Derive aggregate seasonal/annual statistics required for classification.</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**Assign Köppen-Trewartha Climate Types**</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="ss">  + </span>Apply Köppen-Trewartha classification definitions to all grid cells.  </span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**Analyze Classification Changes**</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="ss">  + </span>Identify and visualize classification changes between periods.  </span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>Use the sidebar to navigate, or read in order using the chapter links below.</span>
 <span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>Use the sidebar to navigate, or read in order using the chapter links below.</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="fu">## Modules</span></span>
 <span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="fu">## Chapters</span></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">01 — Download Data</span><span class="co">](01_download_data.qmd)</span>  </span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">02 — Aggregate Data</span><span class="co">](02_aggregate_data.qmd)</span>  </span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">03 — Derive Determinants</span><span class="co">](03_derive_determinants.qmd)</span>  </span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">04 — Classify Types</span><span class="co">](04_classify_types.qmd)</span>  </span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">05 — Analyze Changes</span><span class="co">](05_analyze_changes.qmd)</span>  </span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">01 — Download ERA5 Climate Data</span><span class="co">](01_download_data.qmd)</span>  </span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">02 — Aggregate Climate Variables</span><span class="co">](02_aggregate_data.qmd)</span>  </span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">03 — Derive Classification Determinants</span><span class="co">](03_derive_determinants.qmd)</span>  </span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">04 — Assign Köppen-Trewartha Types</span><span class="co">](04_assign_types.qmd)</span>  </span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">05 — Analyze Classification Changes</span><span class="co">](05_analyze_changes.qmd)</span>  </span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="fu">## Render</span></span>
 <span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="fu">## How to Render</span></span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>Render the full book:</span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render</span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="fu">## How to Preview</span></span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>Live preview (auto-reload in your browser):</span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> preview</span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></pre></div>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>Render the full book:</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>Live preview (auto-reload in the browser):</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> preview</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></pre></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 

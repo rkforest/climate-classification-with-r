@@ -1,8 +1,8 @@
 ---
-title: "Analyze Changes"
+title: "Analyze Classification Changes"
 ---
 
-## ***Climate Periods***
+## ***Periods***
 ```{r}
 #| label: periods
 # Climatological Reference Period
@@ -29,66 +29,29 @@ suppressPackageStartupMessages({
 })
 ```
 
-## ***Directoreis***
+## ***Directories***
 ```{r}
 #| label: directories
-dir_rf <- "_data/00_reference/"
-dir_rd <- "_data/04_classified_data/"
+dir_rf <- "data/00_reference/"
+dir_rd <- "data/04_classified_data/"
 ```
 
 ## ***Palettes***
 ```{r}
 #| label: palettes
-
-kcc_palette <- c(
-  # "A" = "#0474fb",  # Tropical
-  # "B" = "#FFAE42",  # Dry (yellow orange)
-  # "C" = "#1a9850",  # Temperate (light yellow green)
-  # "D" = "#008080",  # Continental (teal)
-  # "E" = "#5e3c99"   # Polar
-
-  "A" = "#1a9850",  # Tropical
-  "B" = "#e6c229",  # Arid 
-  "C" = "#3288bd",  # Subtropical
-  "D" = "#e66101",  # Temperate
-  "E" = "#5e3c99"   # Polar
-)
-
-kcc_labels <- c(
-  "A - Tropical",
-  "B - Dry",
-  "C - Temperate",
-  "D - Continental",
-  "E - Polar"
-)
-
-tcc_palette <- c(
-  "A" = "#1a9850",  # Tropical
-  "B" = "#e6c229",  # Arid
-  "C" = "#3288bd",  # Subtropical
-  "D" = "#e66101",  # Temperate
-  "E" = "#017783",  # Boreal
-  "F" = "#5e3c99"   # Polar
-)
-
-tcc_labels <- c(
-  "A - Tropical",
-  "B - Dry",
-  "C - Subtropical",
-  "D - Temperate",
-  "E - Boreal",
-  "F - Polar"
-)
-
+pth <- paste0(dir_rf,"tcc_group_palette.csv")
+tcc_group_palette <- read_csv(pth, show_col_types = FALSE)
+pth <- paste0(dir_rf,"tcc_type_palette.csv")
+tcc_type_palette <- read_csv(pth, show_col_types = FALSE)
 ```
 
-## ***Map Projections***
+## ***Projections***
 ```{r}
 #| label: projections
 rbn_prj <- "ESRI:54030"
 ```
 
-## ***Global Coastline***
+## ***Coastline***
 ```{r}
 #| label: coastline
 dir <- dir_rf
@@ -97,11 +60,12 @@ pth <- paste(dir, fil, sep = "")
 coastline_sf <- st_read(pth, quiet=TRUE)
 ```
 
-## ***Read Zone Classifcations***
+## ***Import***
 ```{r}
-#| label: classifications
+#| label: import
 pth <- paste(dir_rd, "kcc_classifications.gpkg", sep = "")
 kcc_zones_sf <- st_read(pth, quiet=TRUE)
+
 pth <- paste(dir_rd, "tcc_classifications.gpkg", sep = "")
 tcc_zones_sf <- st_read(pth, quiet=TRUE)
 ```
@@ -226,15 +190,14 @@ fn_create_map <- function(plot_data, cc_name, palette, labels) {
 }
 ```
 
-## ***Köppen Climate Group Changes Summary***
+## ***Main Process***
+
 ```{r}
-#| label: koppen_summary
-kcc_z1_chg_df <- fn_climate_group_changes(kcc_zones_sf)
-kcc_z1_tbl_gt <- fn_build_summary_table(kcc_z1_chg_df, "Köppen")
-kcc_z1_tbl_gt
+#| label: main_process
+
 ```
 
-## ***Trewartha Climate Group Changes Summary***
+## ***Summary***
 ```{r}
 #| label: trewartha_summary
 tcc_z1_chg_df <- fn_climate_group_changes(tcc_zones_sf)
@@ -242,7 +205,7 @@ tcc_z1_tbl_gt <- fn_build_summary_table(tcc_z1_chg_df, "Trewartha")
 tcc_z1_tbl_gt
 ```
 
-## ***Climate Group Visualization***
+## ***Map***
 ```{r}
 #| label: visualize
 #| #| label: v2_hw

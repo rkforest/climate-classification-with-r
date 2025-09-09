@@ -1,27 +1,24 @@
 project:
   type: book
   output-dir: "_output"  
-  resources: ".quarto/files"    # where figures/supporting files go
+  resources: ".quarto/files"  # where figures and supporting files go
 
 book:
-  title: "Global Climate Classification Change Analysis"
-  subtitle: "Recent Period vs WMO Climatological Reference Period"
+  title: "Climate Classification Changes"
+  subtitle: "Recent Period (2015–2024) vs WMO Climatological Reference Period (1961–1990)"
   author: "Rick Forest"
-  description: "This project analyzes global climate classification changes by comparing climate data from a recent period (2015–2024) with the WMO Climatological Reference Period (1961–1990)."
-  abstract: "The analysis will be done by applying the Köppen-Trewartha climate classification system to downloaded ERA5 climate data, analyzing and visualizing the climate classification shifts that have already occurred."
-  sidebar:
-    style: docked              # ensures the left book nav shows
-    search: true
+  date: today
 
   chapters:
     - index.qmd
     - 01_download_data.qmd
     - 02_aggregate_data.qmd
     - 03_derive_determinants.qmd
-    - 04_classify_types.qmd
+    - 04_assign_types.qmd
     - 05_analyze_changes.qmd
 
 execute:
+  freeze: auto
   cache: true
   cache-dir: .quarto/cache
   warning: false
@@ -34,10 +31,9 @@ format:
   html:
     page-layout: full
     toc: true
-    toc-location: left
-    margin: false
-    # grid:
-    #   sidebar-width: 300px
-    #   body-width: 900px
-    #   margin-width: 300px
-    #   gutter-width: 1.5rem
+    toc-location: right
+    grid:
+      sidebar-width: 200px
+      body-width: 900px
+      margin-width: 150px
+      gutter-width: 1.5rem

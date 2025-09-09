@@ -1,11 +1,11 @@
 ---
-title: "Derive Metrics"
+title: "Derive Classification Determinants"
 ---
 
-The classification definitions for the Trewartha classification are based on this analysis description:
+The classification definitions for the Koppen-Trewartha classification are based on this analysis description:
 <https://scispace.com/pdf/climate-classification-revisited-from-koppen-to-trewartha-40ofumhxzu.pdf>
 
-## ***Climate Periods***
+## ***Periods***
 ```{r}
 #| label: climate_periods
 # Climatological Reference Period
@@ -33,8 +33,22 @@ suppressPackageStartupMessages({
 ## ***Directories***
 ```{r}
 #| label: directories
-dir_rd <- "_data/02_aggregated_data/"
-dir_wr <- "_data/03_transformed_data/"
+dir_rd <- "data/02_aggregated_data/"
+dir_wr <- "data/03_transformed_data/"
+```
+
+
+## ***Import***
+```{r}
+pth <- paste(dir_rd, "crp_aggregated_t.parquet", sep = "")
+crp_t_df <- read_parquet(pth) 
+pth <- paste(dir_rd, "crp_aggregated_p.parquet", sep = "")
+crp_p_df <- read_parquet(pth) 
+
+pth <- paste(dir_rd, "rcp_aggregated_t.parquet", sep = "")
+rcp_t_df <- read_parquet(pth) 
+pth <- paste(dir_rd, "rcp_aggregated_p.parquet", sep = "")
+rcp_p_df <- read_parquet(pth) 
 ```
 
 ## ***Functions***
@@ -60,7 +74,7 @@ fn_t_determinants <- function(df) {
 }
 ```
 
-### Precipitaion Determinants
+### Precipitation Determinants
 
 ```{r}
 #| label: fn_p_determinants 
@@ -121,72 +135,10 @@ fn_aridity_threshold <- function(df) {
 }
 ```
 
-## ***Calculate Determinants***
-
-### CRP
+### Summarize Means
 
 ```{r}
-#| label: crp_determinants
-
-cp <- crp
-
-cv <- "t"
-fil <- paste0(cp, "_aggregated_", cv, ".parquet")
-pth <- paste0(dir_rd, fil)
-df <- read_parquet(pth) 
-t_df <- fn_t_determinants(df)
-
-cv <- "p"
-fil <- paste0(cp, "_aggregated_", cv, ".parquet")
-pth <- paste0(dir_rd, fil)
-df <- read_parquet(pth) 
-p_df <- fn_p_determinants(df)
-
-d_df <- t_df %>% left_join(p_df, by = c("lon", "lat", "area", "lsm"))
-
-crp_df <- fn_aridity_threshold(d_df)
-
-fil <- "crp_determinants.parquet"
-pth = paste0(dir_wr, fil)
-write_parquet(crp_df, pth)
-
-```
-
-### RCP
-
-```{r}
-#| label: rcp_determinants
-
-cp <- rcp
-
-cv <- "t"
-fil <- paste0(cp, "_aggregated_", cv, ".parquet")
-pth <- paste0(dir_rd, fil)
-df <- read_parquet(pth) 
-t_df <- fn_t_determinants(df)
-
-cv <- "p"
-fil <- paste0(cp, "_aggregated_", cv, ".parquet")
-pth <- paste0(dir_rd, fil)
-df <- read_parquet(pth) 
-p_df <- fn_p_determinants(df)
-
-d_df <- t_df %>% left_join(p_df, by = c("lon", "lat", "area", "lsm"))
-
-rcp_df <- fn_aridity_threshold(d_df)
-
-fil <- "rcp_determinants.parquet"
-pth = paste0(dir_wr, fil)
-write_parquet(rcp_df, pth)
-
-```
-
-## ***Summarize Results***
-
-### Retrieve Results
-
-```{r}
-#| label: fn_retrieve_results
+#| label: fn_summarize_means
 fn_summarize_results <- function(df) {
   df_means <- df |> 
     select(-c(1:4)) |> 
@@ -199,10 +151,27 @@ fn_summarize_results <- function(df) {
 }
 ```
 
-### Join periods
+## ***Main Process***
 
 ```{r}
+#| label: main_process
+
+t_df <- fn_t_determinants(crp_t_df)
+p_df <- fn_p_determinants(crp_p_df)
+d_df <- t_df |>
+  left_join(p_df, by = c("lon", "lat", "area", "lsm"))
+crp_df <- fn_aridity_threshold(d_df)
+pth = paste0(dir_wr, "crp_determinants.parquet")
+write_parquet(crp_df, pth)
 df1 <- fn_summarize_results(crp_df)
+
+t_df <- fn_t_determinants(rcp_t_df)
+p_df <- fn_p_determinants(rcp_p_df)
+d_df <- t_df |>
+  left_join(p_df, by = c("lon", "lat", "area", "lsm"))
+rcp_df <- fn_aridity_threshold(d_df)
+pth = paste0(dir_wr, "rcp_determinants.parquet")
+write_parquet(rcp_df, pth)
 df2 <- fn_summarize_results(rcp_df)
 
 df_joined <- df1 |> 
@@ -228,7 +197,7 @@ df_joined <- df1 |>
 
 ```
 
-### Build Table
+## ***Summary***
 
 ```{r}
 gt_tbl <- 

@@ -1,10 +1,10 @@
- ---
-title: "Classify Types"
+---
+title: " Assign Classification Types"
 ---
 
-Use the classification metrics to calculate the climate type for each grid cell, using the Koppen-Trewartha classification system.
+Use the classification determinants to calculate the climate type for each grid cell, using the Köppen-Trewartha classification system.
 
-## ***Climate Periods***
+## ***Periods***
 ```{r}
 #| label: periods
 # Climatological Reference Period
@@ -34,9 +34,9 @@ suppressPackageStartupMessages({
 ## ***Directories***
 ```{r}
 #| label: directories
-dir_rf <- "_data/00_reference/"
-dir_rd <- "_data/03_transformed_data/"
-dir_wr <- "_data/04_classified_data/"
+dir_rf <- "data/00_reference/"
+dir_rd <- "data/03_transformed_data/"
+dir_wr <- "data/04_classified_data/"
 ```
 
 ## ***Palettes***
@@ -48,13 +48,13 @@ pth <- paste0(dir_rf,"tcc_type_palette.csv")
 tcc_type_palette <- read_csv(pth, show_col_types = FALSE)
 ```
 
-## ***Map Projections***
+## ***Projections***
 ```{r}
 #| label: projections
 rbn_prj <- "ESRI:54030"
 ```
 
-## ***Global Coastline***
+## ***Coastline***
 ```{r}
 #| label: coastline
 dir <- dir_rf
@@ -63,13 +63,14 @@ pth <- paste(dir, fil, sep = "")
 coastline_sf <- st_read(pth, quiet=TRUE)
 ```
 
-## ***Classification metrics***
+## ***Import***
 ```{r}
-#| label: metrics
+#| label: determinants
 pth <- paste(dir_rd, "crp_determinants.parquet", sep = "")
-crp_metrics_df <- read_parquet(pth) 
+crp_determinants_df <- read_parquet(pth) 
+
 pth <- paste(dir_rd, "rcp_determinants.parquet", sep = "")
-rcp_metrics_df <- read_parquet(pth) 
+rcp_determinants_df <- read_parquet(pth) 
 ```
 
 ## ***Functions***
@@ -117,28 +118,20 @@ fn_classify_tcc <- function(df) {
 }
 ```
 
-## ***Apply classification system***
+## ***Main Process***
 ```{r}
-#| label: classify
-df1 <- fn_classify_tcc(crp_metrics_df)
-df2 <- fn_classify_tcc(rcp_metrics_df)
+#| label: main_process
+df1 <- fn_classify_tcc(crp_determinants_df)
+df2 <- fn_classify_tcc(rcp_determinants_df)
 tcc_df <- df1 %>% 
   left_join(df2 , by = c("lon", "lat", "lsm")) |>
   rename(czn = zn.x, rzn = zn.y, area = area.x) |>
   select(lon, lat, lsm, area, czn, rzn) |>
   mutate(czn = factor(czn, levels = tcc_type_palette$typ)) |>
   mutate(rzn = factor(rzn, levels = tcc_type_palette$typ))
-```
 
-## ***Convert to spatial data frames***
-```{r}
-#| label: spatial
 tcc_sf <- st_as_sf(tcc_df, coords = c("lon", "lat"), crs = 4326)
-```
 
-## ***Combine geometries***
-```{r}
-#| label: combine
 tcc_cmb_sf <- tcc_sf |>
   filter(lsm > 0) |>
   summarise(
@@ -154,7 +147,7 @@ tcc_cmb_sf <- tcc_sf |>
 tcc_cmb_sf <- st_set_crs(tcc_cmb_sf, 4326)
 ```
 
-## ***Save Results***
+## ***Save***
 ```{r}
 #| label: save
 fil <- "tcc_classifications.gpkg"
@@ -177,7 +170,7 @@ fn_create_map <- function(plot_data, palette, cp_lbl) {
     ) +
     coord_sf(crs = rbn_prj) +
     labs(
-      title = "Koppen-Trewartha Climate Classification",
+      title = "Köppen-Trewartha Climate Classification",
       subtitle = cp_lbl,
       color = "Types"
     ) +
@@ -226,7 +219,7 @@ fn_build_summary_table <- function(df, cp) {
 }
 ```
 
-## ***Summary Table***
+## ***Summary***
 
 ```{r}
 #| label: build_t1
@@ -275,7 +268,7 @@ dfj <- df1 |>
 
 t2 <- fn_build_summary_table(dfj, rcp_lbl)
 ```
-## ***Climate Group Visualization***
+## ***Map***
 
 ```{r}
 #| label: v1

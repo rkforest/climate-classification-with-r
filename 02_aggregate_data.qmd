@@ -1,13 +1,12 @@
 ---
-title: "Aggregate Climate"
+title: "Aggregate Climate Variables"
 engine: jupyter
 jupyter: myproj
 ---
 
-Aggregate temperature and precipitation data for each climate period by longitude, latitude and month number producing a single value per grid cell and month number.  Reshape data from long form to wide form (one row per grid cell with each monthly value in a separate column) to facillite the deriving of classification metrics.
+Aggregate temperature and precipitation data for each climate period by longitude, latitude and month number producing a single value per grid cell and month number.  Reshape data from long form to wide form (one row per grid cell with each monthly value in a separate column) to facillite the deriving of classification determinants.
 
-## ***Climate Periods***
-
+## ***Periods***
 ```{python}
 #| label: climate_periods
 # Climatological Reference Period
@@ -34,11 +33,12 @@ from datetime import datetime
 ## ***Directories***
 ```{python}
 #| label: directories
-dir_rd = "_data/01_downloaded_data/"
-dir_wr = "_data/02_aggregated_data/"
+dir_rd = "data/01_downloaded_data/"
+dir_wr = "data/02_aggregated_data/"
 ```
 
-## ***Land Sea Mask***
+## ***Mask***
+
 ```{python}
 #| label: read_land_sea_mask
 fil = "land_sea_mask.nc"
@@ -169,10 +169,11 @@ def fn_calculate_grid_area(df: pd.DataFrame) -> pd.DataFrame:
 
 ```
 
-## ***Aggregate Data***
+## ***Main Process***
 
 ```{python}
-#| label: aggregate_data
+#| label: main_process
+
 start = datetime.now()
 
 df1 = fn_aggregate_climate(crp, "t", "t2m")
@@ -194,7 +195,7 @@ end = datetime.now()
 print("elapsed time: " + str(end - start))
 ```
 
-## ***Save Results***
+## ***Save***
 
 ```{python}
 

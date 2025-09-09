@@ -1,6 +1,6 @@
 # Global Climate Classification Changes
 
- This project uses **ERA5 reanalysis climate data** to compare a *Recent Climate Period (2015–2024)* with the *WMO Climatological Standard Reference Period (1961-1990)*.  It will compute and visualize climate classification changes using the Köppen and Trewartha classification systems.
+ This project uses **ERA5 reanalysis climate data** to compare a *Recent Climate Period (2015–2024)* with the *WMO Climatological Standard Reference Period (1961-1990)*.  It will compute and visualize climate classification changes using the Köppen-Trewartha classification system.
 
 Author: Rick Forest  
 
@@ -16,7 +16,7 @@ Author: Rick Forest
  The primary outputs of this project are:
   + tables summarizing:
     + recent and reference period temperature and precipitation data
-    + derived climate classification metrics for each period
+    + derived climate classification determinants for each period
     + climate group classification results for each period
     + classification shifts, comparing recent and reference periods
   + global maps visualizing:
@@ -34,14 +34,14 @@ This project uses a multi-step pipeline::
 
 1. **Download ERA5 Data** – 
   + Download and save ERA5 climate reanalysis datasets.
-2. **Compute Climate Normals** – 
+2. **Aggregate Climate Period Data** – 
   + Compute climate period averages (temperature & precipitation).
-3. **Derive Classification Metrics** – 
+3. **Derive Classification Determinants** – 
   + Derive aggregate seasonal/annual statistics required for classification.
-4. **Apply Classification Systems**
-  + Apply Koppen and Trewartha classification definitions to all grid cells.  
-5. **Analyze Classification Shifts**
-  + Compare zones across periods to identify changes.  
+4. **Apply Köppen-Trewartha classification system**
+  + Apply Koppen-Trewartha classification definitions to all grid cells.  
+5. **Analyze Classification Changes**
+  + Identify and visualize classification changes between periods.  
 
 ---
 
