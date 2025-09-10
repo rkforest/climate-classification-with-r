@@ -12,7 +12,7 @@ crp_end <- 1990
 crp_lbl <- paste("CRP ", crp_beg, "-", crp_end, sep = "")
 # Recent Climate Period
 rcp = "rcp"
-rcp_beg <- 2011
+rcp_beg <- 2015
 rcp_end <- 2024
 rcp_lbl <- paste("RCP ", rcp_beg, "-", rcp_end, sep = "")
 ```
@@ -26,6 +26,7 @@ suppressPackageStartupMessages({
   library(arrow)
   library(units)
   library(gt)
+  library(patchwork)
 })
 ```
 
@@ -37,13 +38,28 @@ dir_rd <- "data/04_classified_data/"
 ```
 
 ## ***Palettes***
+
 ```{r}
 #| label: palettes
-pth <- paste0(dir_rf,"tcc_group_palette.csv")
-tcc_group_palette <- read_csv(pth, show_col_types = FALSE)
-pth <- paste0(dir_rf,"tcc_type_palette.csv")
-tcc_type_palette <- read_csv(pth, show_col_types = FALSE)
+
+pth <- paste0(dir_rf,"ktc_group_palette.csv")
+ktc_grp_palette_df<- read_csv(pth, show_col_types = FALSE)
+ktc_grp_levels <- ktc_grp_palette_df$grp
+ktc_grp_palette_str <- setNames(
+  ktc_grp_palette_df$hex,
+  ktc_grp_palette_df$grp
+)
+
+pth <- paste0(dir_rf,"ktc_type_palette.csv")
+ktc_typ_palette_df <- read_csv(pth, show_col_types = FALSE)
+ktc_typ_levels <- ktc_typ_palette_df$typ
+ktc_typ_palette_str <- setNames(
+  ktc_typ_palette_df$hex,
+  ktc_typ_palette_df$typ
+)
+
 ```
+
 
 ## ***Projections***
 ```{r}
@@ -63,59 +79,63 @@ coastline_sf <- st_read(pth, quiet=TRUE)
 ## ***Import***
 ```{r}
 #| label: import
-pth <- paste(dir_rd, "kcc_classifications.gpkg", sep = "")
-kcc_zones_sf <- st_read(pth, quiet=TRUE)
+pth <- paste(dir_rd, "ktc_grp_classification.gpkg", sep = "")
+ktc_grp_sf <- st_read(pth, quiet=TRUE)
 
-pth <- paste(dir_rd, "tcc_classifications.gpkg", sep = "")
-tcc_zones_sf <- st_read(pth, quiet=TRUE)
+pth <- paste(dir_rd, "ktc_typ_classification.gpkg", sep = "")
+ktc_typ_sf <- st_read(pth, quiet=TRUE)
 ```
 
 ## ***Functions***
 
+### Calculate Group Changes
+
 ```{r}
 #| label: fn_climate_group_changes
 fn_climate_group_changes <- function(sf) {
-  cz1_sf <- sf |>
-    select(cz1,mkm,pct,geom) |>
+  crp_grp_sf <- sf |>
+    select(cgrp, mkm, pct, geom) |>
     summarize(
       mkm = sum(mkm),
       pct = sum(pct),
       geom = st_combine(geom),
-      .by = c(cz1)) |>
-      rename(cg = cz1)
+      .by = c(cgrp)) |>
+      rename(cg = cgrp)
 
-  rz1_sf <- sf |>
-    select(rz1,mkm,pct,geom) |>
+  rcp_grp_sf <- sf |>
+    select(rgrp, mkm, pct, geom) |>
     summarize(
       mkm = sum(mkm),
       pct = sum(pct),
       geom = st_combine(geom),
-      .by = c(rz1))|>
-      rename(cg = rz1)
+      .by = c(rgrp))|>
+      rename(cg = rgrp)
 
-  cz1_df <- cz1_sf |> st_drop_geometry()
-  rz1_df <- rz1_sf |> st_drop_geometry()
+  crp_grp_df <- crp_grp_sf |> st_drop_geometry()
+  rcp_grp_df <- rcp_grp_sf |> st_drop_geometry()
 
-  z1x_df <- cz1_df |> 
-    inner_join(rz1_df, by = "cg") |>
+  join_df <- crp_grp_df  |> 
+    inner_join(rcp_grp_df, by = "cg") |>
     mutate(
       mkm.chg = mkm.y - mkm.x,
       pct.chg = pct.y - pct.x
     ) |>
     select(cg, mkm.x, mkm.y, mkm.chg, pct.x, pct.y, pct.chg)
 
-  return(z1x_df)
+  return(join_df)
 }
 ```
 
+### Build Group Changes Summary Table
+
 ```{r}
-#| label: fn_build_summary_table
-fn_build_summary_table <- function(df, cc_name) {
+#| label: fn_build_summary_grp_table
+fn_build_summary_grp_table <- function(df) {
   tbl <- df |>
     gt(rowname_col = "cg" ) |>
     tab_stubhead(label = "Group")|>
     tab_header(
-      title = paste(cc_name," Climate Group Changes"),
+      title = "Köppen-Trewartha Climate Group Changes",
     ) |>
     tab_spanner(
       label = "Area (Mkm²)",
@@ -158,35 +178,30 @@ fn_build_summary_table <- function(df, cc_name) {
 }
 ```
 
+### Create Group Changes Map
+
 ```{r}
-#| label: fn_create_map
-fn_create_map <- function(plot_data, cc_name, palette, labels) {
+#| label: fn_create_grp_map
+fn_create_grp_map <- function(plot_data, palette, cp) {
 
   p <- ggplot(plot_data) +
-    geom_sf(aes(color = Group), size = 0.01) +
-    scale_color_manual(
-      values = palette,
-      labels = labels,
-      name = "Climate Group")+
-    geom_sf(
-      data = coastline_sf,
-      color = "black",
-      linewidth = 0.1
-    ) +
+    geom_sf(aes(color = grp), size = 0.01) +
+    scale_color_manual(values = palette, drop = FALSE) +
+    geom_sf(data = coastline_sf, color = "black", linewidth = 0.1) +
     coord_sf(crs = rbn_prj) +
-    labs(
-      title = paste(cc_name," Climate Classification Groups"),
-      subtitle = crp_lbl,
-      color = "Groups"
-    ) +
-    guides(
-      color = guide_legend(
-        override.aes = list(
-          size = 3 # legend point size only
-        )
+    guides(color = guide_legend(override.aes = list(size = 4 ))) # legend point size
+
+  if (cp == "rcp") {
+    p <- p +  
+      labs(
+        title = "Group Classification Changes ",
+        color = "New\nGroup"
       )
-    )
-    return(p)
+  } else {
+    p <- p + labs(color = "Old\nGroup")
+  }
+
+  return(p)
 }
 ```
 
@@ -195,33 +210,94 @@ fn_create_map <- function(plot_data, cc_name, palette, labels) {
 ```{r}
 #| label: main_process
 
+ktc_grp_sf <- ktc_grp_sf|>  mutate(cgrp = factor(cgrp, levels = ktc_grp_levels))
+ktc_grp_sf <- ktc_grp_sf|>  mutate(rgrp = factor(rgrp, levels = ktc_grp_levels))
+
+grp_chg_df <- fn_climate_group_changes(ktc_grp_sf)
+grp_tbl_gt <- fn_build_summary_grp_table(grp_chg_df)
+grp_tbl_gt
+
+# typ_chg_df <- fn_climate_type_changes(ktc_sf)
+# typ_tbl_gt <- fn_build_summary_table(typ_chg_df, "Trewartha")
+# typ_tbl_gt
+
 ```
 
-## ***Summary***
+## ***Maps***
+
+### All group changes
+
 ```{r}
-#| label: trewartha_summary
-tcc_z1_chg_df <- fn_climate_group_changes(tcc_zones_sf)
-tcc_z1_tbl_gt <- fn_build_summary_table(tcc_z1_chg_df, "Trewartha")
-tcc_z1_tbl_gt
+#| label: map_all_changes
+#| fig-height: 7
+#| fig-aspect: .62   
+#| out-width: 100%
+ 
+v1_data <- ktc_grp_sf |>
+  filter(cgrp != rgrp) |>
+  select(rgrp) |>
+  rename(grp = rgrp)
+v1 <- fn_create_grp_map (v1_data, ktc_grp_palette_str, "rcp")
+
+v2_data <- ktc_grp_sf |>
+  filter(cgrp != rgrp) |>
+  select(cgrp) |>
+  rename(grp = cgrp)
+v2 <- fn_create_grp_map (v2_data, ktc_grp_palette_str, "crp")
+
+v1 / v2
 ```
 
-## ***Map***
+### Group A Changes
+
 ```{r}
-#| label: visualize
-#| #| label: v2_hw
-#| fig-width: 10
-#| fig-aspectt: .7  
+#| label: map_grp_A_changes
+#| fig-height: 7
+#| fig-aspect: .62  
 #| out-width: 100%
 
-plot_data <- kcc_zones_sf  |>
-  select(cz1) |>
-  rename(Group = cz1)
-p1 <- fn_create_map(plot_data, "Köppen", kcc_palette, kcc_labels)
-p1
+plot_grp <- "A"
 
-plot_data <- tcc_zones_sf |>
-  select(cz1) |>
-  rename(Group = cz1)
-p2 <- fn_create_map(plot_data, "Trewartha", tcc_palette, tcc_labels)
-p2
+plot_data <- ktc_grp_sf |>
+  filter(cgrp != rgrp) |>
+  filter(rgrp == plot_grp) |>
+  rename(grp = rgrp)
+v3 <- fn_create_grp_map (plot_data, ktc_grp_palette_str, "rcp")
+
+plot_data <- ktc_grp_sf |>
+  filter(cgrp != rgrp) |>
+  filter(rgrp == plot_grp) |>
+  rename(grp = cgrp)
+v4 <- fn_create_grp_map (plot_data, ktc_grp_palette_str, "crp")
+
+v3 / v4
+```
+
+### Group B Changes
+
+```{r}
+#| label: map_grp_B_changes
+#| fig-height: 7
+#| fig-aspect: .62  
+#| out-width: 100%
+
+plot_grp <- "B"
+
+plot_data <- ktc_grp_sf |>
+  filter(cgrp != rgrp) |>
+  filter(rgrp == plot_grp) |>
+  rename(grp = rgrp)
+v5 <- fn_create_grp_map (plot_data, ktc_grp_palette_str, "rcp")
+
+plot_data <- ktc_grp_sf |>
+  filter(cgrp != rgrp) |>
+  filter(rgrp == plot_grp) |>
+  rename(grp = cgrp)
+v6 <- fn_create_grp_map (plot_data, ktc_grp_palette_str, "crp")
+
+v5 / v6
+```
+
+```{r}
+
 ```

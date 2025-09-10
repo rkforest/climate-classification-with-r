@@ -28,6 +28,7 @@ suppressPackageStartupMessages({
   library(arrow)
   library(gt)
   library(units)
+  library(patchwork)
 })
 ```
 
@@ -40,12 +41,26 @@ dir_wr <- "data/04_classified_data/"
 ```
 
 ## ***Palettes***
+
 ```{r}
 #| label: palettes
-pth <- paste0(dir_rf,"tcc_group_palette.csv")
-tcc_group_palette <- read_csv(pth, show_col_types = FALSE)
-pth <- paste0(dir_rf,"tcc_type_palette.csv")
-tcc_type_palette <- read_csv(pth, show_col_types = FALSE)
+
+pth <- paste0(dir_rf,"ktc_group_palette.csv")
+ktc_grp_palette_df<- read_csv(pth, show_col_types = FALSE)
+ktc_grp_levels <- ktc_grp_palette_df$grp
+ktc_grp_palette_str <- setNames(
+  ktc_grp_palette_df$hex,
+  ktc_grp_palette_df$grp
+)
+
+pth <- paste0(dir_rf,"ktc_type_palette.csv")
+ktc_typ_palette_df <- read_csv(pth, show_col_types = FALSE)
+ktc_typ_levels <- ktc_typ_palette_df$typ
+ktc_typ_palette_str <- setNames(
+  ktc_typ_palette_df$hex,
+  ktc_typ_palette_df$typ
+)
+
 ```
 
 ## ***Projections***
@@ -75,13 +90,15 @@ rcp_determinants_df <- read_parquet(pth)
 
 ## ***Functions***
 
+### Assign KTC Group
 
 ```{r}
-#| label: fn_classify_tcc
-fn_classify_tcc <- function(df) {
+#| label: fn_assign_grp
+#| 
+fn_assign_grp <- function(df) {
   df <- df |>
     mutate(
-      z1 = case_when(
+      grp = case_when(
         tmax < 10 ~ "F",
         ptot < athr ~ "B",
         tmin >= 18 ~ "A",
@@ -89,79 +106,53 @@ fn_classify_tcc <- function(df) {
         tg10 >= 4 ~ "D",
         tg10 >= 1 ~ "E",
         TRUE ~ "X"
-      ),
-      zn = ""
+      )
     )
+  return(df)
+}
 
+```
+
+### Assign KTC Type
+
+```{r}
+#| label: fn_assign_typ
+fn_assign_typ <- function(df) {
   df <- df |>
     mutate(
-      z2 = case_when(
-        z1 == "A" & (pl60 <= 2) ~ "r",
-        z1 == "A" ~ "w",
-        z1 == "B" & (ptot < athr/2) ~ "W",
-        z1 == "B" ~ "S",
+      cls = case_when(
+        grp == "A" & (pl60 <= 2) ~ "r",
+        grp == "A" ~ "w",
+        grp == "B" & (ptot < athr/2) ~ "W",
+        grp == "B" ~ "S",
 
-        z1 == "C" & (wtot >= stot * 3) & (pmin < 30) & (ptot < 890) ~ "s",
-        z1 == "C" & (stot >= wtot * 10) ~ "w",
-        z1 == "C" ~ "f",
+        grp == "C" & (wtot >= stot * 3) & (pmin < 30) & (ptot < 890) ~ "s",
+        grp == "C" & (stot >= wtot * 10) ~ "w",
+        grp == "C" ~ "f",
 
-        z1 == "D" & (tmin > 0) ~ "o",
-        z1 == "D" ~ "c",
-        z1 == "F" & (tmax > 0) ~ "t",
-        z1 == "F" ~ "i",
+        grp == "D" & (tmin > 0) ~ "o",
+        grp == "D" ~ "c",
+        grp == "F" & (tmax > 0) ~ "t",
+        grp == "F" ~ "i",
         TRUE ~ ""
       ),
-      zn = paste(z1, z2, sep = "")
+      typ = paste(grp, cls, sep = "")
     )
-  df <- df|> select(lon, lat, area, lsm, zn)
+  df <- df|> select(lon, lat, area, lsm, grp, typ)
   return(df)
 }
 ```
 
-## ***Main Process***
-```{r}
-#| label: main_process
-df1 <- fn_classify_tcc(crp_determinants_df)
-df2 <- fn_classify_tcc(rcp_determinants_df)
-tcc_df <- df1 %>% 
-  left_join(df2 , by = c("lon", "lat", "lsm")) |>
-  rename(czn = zn.x, rzn = zn.y, area = area.x) |>
-  select(lon, lat, lsm, area, czn, rzn) |>
-  mutate(czn = factor(czn, levels = tcc_type_palette$typ)) |>
-  mutate(rzn = factor(rzn, levels = tcc_type_palette$typ))
+### Create Map
 
-tcc_sf <- st_as_sf(tcc_df, coords = c("lon", "lat"), crs = 4326)
-
-tcc_cmb_sf <- tcc_sf |>
-  filter(lsm > 0) |>
-  summarise(
-    geometry = st_combine(geometry),
-    mkm = sum(area*lsm),
-    .by = c(czn, rzn)
-  ) |>
-  mutate(cz1 = substr(czn, 1, 1)) |>
-  mutate(rz1 = substr(rzn, 1, 1)) |>
-  mutate(pct = round(mkm / sum(mkm) * 100, 3)) |>
-  select(czn, cz1, rzn, rz1, mkm, pct, geometry) |>
-  arrange(czn, rzn) 
-tcc_cmb_sf <- st_set_crs(tcc_cmb_sf, 4326)
-```
-
-## ***Save***
-```{r}
-#| label: save
-fil <- "tcc_classifications.gpkg"
-dir <- dir_wr
-pth <- paste0(dir,fil)
-st_write(tcc_cmb_sf, pth, delete_dsn = TRUE, quiet = TRUE)
-```
+#### Group
 
 ```{r}
-#| label: fn_create_map
-fn_create_map <- function(plot_data, palette, cp_lbl) {
+#| label: fn_create_grp_map
+fn_create_grp_map <- function(plot_data, palette, cp_lbl) {
 
   p <- ggplot(plot_data) +
-    geom_sf(aes(color = type), size = 0.01) +
+    geom_sf(aes(color = grp), size = 0.01) +
     scale_color_manual(values = palette, drop = FALSE) +
     geom_sf(
       data = coastline_sf,
@@ -170,9 +161,9 @@ fn_create_map <- function(plot_data, palette, cp_lbl) {
     ) +
     coord_sf(crs = rbn_prj) +
     labs(
-      title = "Köppen-Trewartha Climate Classification",
+      title = "Köppen-Trewartha Climate Classification Groups",
       subtitle = cp_lbl,
-      color = "Types"
+      color = "Group"
     ) +
     guides(
       color = guide_legend(
@@ -185,19 +176,55 @@ fn_create_map <- function(plot_data, palette, cp_lbl) {
 }
 ```
 
+#### Type
+
 ```{r}
-#| label: fn_build_summary_table
-fn_build_summary_table <- function(df, cp) {
+#| label: fn_create_typ_map
+
+fn_create_typ_map <- function(plot_data, palette, cp_lbl) {
+
+  p <- ggplot(plot_data) +
+    geom_sf(aes(color = typ), size = 0.01) +
+    scale_color_manual(values = palette, drop = FALSE) +
+    geom_sf(
+      data = coastline_sf,
+      color = "black",
+      linewidth = 0.1
+    ) +
+    coord_sf(crs = rbn_prj) +
+    labs(
+      title = "Köppen-Trewartha Climate Classification Types",
+      subtitle = cp_lbl,
+      color = "Type"
+    ) +
+    guides(
+      color = guide_legend(
+        override.aes = list(
+          size = 5 # legend point size only
+        )
+      )
+    )
+    return(p)
+}
+
+```
+### Build Summary Table
+
+#### Summary Table v1
+
+```{r}
+#| label: build_tbl_v1
+
+fn_build_summary_table_v1 <- function(df, cp, id, id_lbl) {
   tbl <- df |>
-    gt(rowname_col = "typ" ) |>
-    tab_stubhead(label = "Type")|>
+    gt(rowname_col = id) |>
+    tab_stubhead(label = id_lbl)|>
     tab_header(
-      title = paste("Classification Summary:",cp)
+      title = paste(id_lbl, "Summary"),
+      subtitle = cp
     ) |>
 
-    # 2) center body *and* summary cells for Area
     cols_align(align = "center", columns = mkm) |>
-    # 1) center the column header
     tab_style(
       style = cell_text(align = "center"),
       locations = cells_column_labels(columns = mkm)
@@ -206,7 +233,7 @@ fn_build_summary_table <- function(df, cp) {
     cols_label(
       lbl = "Description",
       mkm = "Area (Mkm²)",
-      pct = "%"
+      pct = "Area %"
     ) |>
 
     fmt_number(columns = c(mkm), decimals = 1) |>
@@ -219,13 +246,140 @@ fn_build_summary_table <- function(df, cp) {
 }
 ```
 
-## ***Summary***
+#### Summary Table v2
 
 ```{r}
-#| label: build_t1
-crp_tbl_df <- tcc_cmb_sf |>
+#| label: build_tbl_v2
+
+fn_build_summary_table_v2 <- function(df, cp, id, id_lbl) {
+  tbl <- df |>
+    gt(rowname_col = id) |>
+    tab_stubhead(label = id_lbl)|>
+    tab_header(
+      title = paste(id_lbl, "Summary"),
+      subtitle = cp
+    ) |>
+
+    cols_label(
+      lbl = "Description",
+      pct = "Area %"
+    ) |>
+
+    fmt_number(columns = c(pct), decimals = 2) |>
+    grand_summary_rows(
+      columns = c(pct),
+      fns = list("Total" = ~ sum(.)),
+      fmt = list(~ fmt_number(.x, decimals = 1))
+    ) 
+}
+```
+
+#### Summary Table v3
+
+```{r}
+#| label: build_tbl_v3
+
+fn_build_summary_table_v3 <- function(df, cp, id, id_lbl) {
+  tbl <- df |>
+    gt(rowname_col = id) |>
+
+    cols_label(
+      pct = "Area %"
+    ) |>
+
+    fmt_number(columns = c(pct), decimals = 2) |>
+    grand_summary_rows(
+      columns = c(pct),
+      fns = list("Total" = ~ sum(.)),
+      fmt = list(~ fmt_number(.x, decimals = 1))
+    ) 
+}
+
+```
+## ***Main Process***
+
+```{r}
+#| label: main_process
+
+# Step 1 assign
+
+crp_grp_df <- fn_assign_grp(crp_determinants_df)
+crp_typ_df <- fn_assign_typ(crp_grp_df)
+
+rcp_grp_df <- fn_assign_grp(rcp_determinants_df)
+rcp_typ_df <- fn_assign_typ(rcp_grp_df)
+
+# Step 2 select
+
+crp_grp_df <- crp_grp_df |> select(lat,lon,area,lsm,grp)
+crp_typ_df <- crp_typ_df |> select(lat,lon,area,lsm,typ)
+
+rcp_grp_df <- rcp_grp_df |> select(lat,lon,area,lsm,grp)
+rcp_typ_df <- rcp_typ_df |> select(lat,lon,area,lsm,typ)
+
+# Step 3 join
+
+ktc_grp_df <- crp_grp_df %>% 
+  left_join(rcp_grp_df , by = c("lon", "lat", "lsm")) |>
+  rename(cgrp = grp.x, rgrp = grp.y, area = area.x) |>
+  select(lon, lat, lsm, area, cgrp, rgrp) |>
+  mutate(cgrp = factor(cgrp, levels = ktc_grp_palette_df$grp)) |>
+  mutate(rgrp = factor(rgrp, levels = ktc_grp_palette_df$grp))
+
+ktc_typ_df <- crp_typ_df %>% 
+  left_join(rcp_typ_df , by = c("lon", "lat", "lsm")) |>
+  rename(ctyp = typ.x, rtyp = typ.y, area = area.x) |>
+  select(lon, lat, lsm, area, ctyp, rtyp) |>
+  mutate(ctyp = factor(ctyp, levels = ktc_typ_palette_df$typ)) |>
+  mutate(rtyp = factor(rtyp, levels = ktc_typ_palette_df$typ))
+
+# Step 4 convert to sf
+
+ktc_grp_sf <- st_as_sf(ktc_grp_df, coords = c("lon", "lat"), crs = 4326)
+ktc_typ_sf <- st_as_sf(ktc_typ_df, coords = c("lon", "lat"), crs = 4326)
+
+# Step 5 summarize
+
+ktc_grp_cmb_sf <- ktc_grp_sf |>
+  filter(lsm > 0) |>
+  summarise(
+    geometry = st_combine(geometry),
+    mkm = sum(area*lsm),
+    .by = c(cgrp, rgrp)
+  ) |>
+  mutate(pct = round(mkm / sum(mkm) * 100, 3)) |>
+  select(cgrp, rgrp, mkm, pct, geometry) |>
+  arrange(cgrp, rgrp) |>
+  st_set_crs(4326)
+
+ktc_typ_cmb_sf <- ktc_typ_sf |>
+  filter(lsm > 0) |>
+  summarise(
+    geometry = st_combine(geometry),
+    mkm = sum(area*lsm),
+    .by = c(ctyp, rtyp)
+  ) |>
+  mutate(pct = round(mkm / sum(mkm) * 100, 3)) |>
+  select(ctyp, rtyp, mkm, pct, geometry) |>
+  arrange(ctyp, rtyp) |>
+  st_set_crs(4326)
+
+# Step 6 crp summary df
+
+crp_grp_tbl_df <- ktc_grp_cmb_sf |>
   st_drop_geometry() |>
-  rename(typ = czn) |>
+  rename(grp = cgrp) |>
+  select(grp, mkm, pct) |>
+  summarise(
+    mkm = sum(mkm),
+    pct = sum(pct),
+    .by = grp
+  )|>
+  arrange(grp)
+
+crp_typ_tbl_df <- ktc_typ_cmb_sf |>
+  st_drop_geometry() |>
+  rename(typ = ctyp) |>
   select(typ, mkm, pct) |>
   summarise(
     mkm = sum(mkm),
@@ -234,104 +388,273 @@ crp_tbl_df <- tcc_cmb_sf |>
   )|>
   arrange(typ)
 
-df1 <- crp_tbl_df
+# Step 7 rcp summary df
 
-df2 <- tcc_type_palette |> select(typ, lbl)
-
-dfj <- df1 |>
-   left_join(df2, by = "typ") |>
-   select(typ,lbl,mkm,pct)
-
-t1 <- fn_build_summary_table(dfj, crp_lbl)
-```
-
-```{r}
-#| label: build_t2
-rcp_tbl_df <- tcc_cmb_sf |>
+rcp_grp_tbl_df <- ktc_grp_cmb_sf |>
   st_drop_geometry() |>
-  rename(typ = rzn) |>
+  rename(grp = rgrp) |>
+  select(grp, mkm, pct) |>
+  summarise(
+    mkm = sum(mkm),
+    pct = sum(pct),
+    .by = grp
+  )|>
+  arrange(grp)
+
+rcp_typ_tbl_df <- ktc_typ_cmb_sf |>
+  st_drop_geometry() |>
+  rename(typ = rtyp) |>
   select(typ, mkm, pct) |>
   summarise(
     mkm = sum(mkm),
     pct = sum(pct),
     .by = typ
-  ) |>
+  )|>
   arrange(typ)
 
-df1 <- rcp_tbl_df
+```
 
-df2 <- tcc_type_palette |> select(typ, lbl)
+## ***Save***
+
+```{r}
+#| label: save
+ 
+fil <- "ktc_grp_classification.gpkg"
+dir <- dir_wr
+pth <- paste0(dir,fil)
+st_write(ktc_grp_cmb_sf, pth, delete_dsn = TRUE, quiet = TRUE)
+
+fil <- "ktc_typ_classification.gpkg"
+dir <- dir_wr
+pth <- paste0(dir,fil)
+st_write(ktc_typ_cmb_sf, pth, delete_dsn = TRUE, quiet = TRUE)
+
+```
+
+## CRP Classification Summary
+
+### CRP Tables
+
+#### Group
+
+```{r}
+#| label: crp_grp_table
+
+df1 <- crp_grp_tbl_df
+df2 <- ktc_grp_palette_df |> select(grp, lbl)
+
+dfj <- df1 |>
+   left_join(df2, by = "grp") 
+   
+tbl_df1_v1 <- dfj |> select(grp, lbl, mkm, pct)
+tbl_df1_v2 <- dfj |> select(grp, lbl, pct)
+#tbl_df1_v3 <- dfj |> select(grp, pct)
+
+crp_grp_tbl_v1 <- fn_build_summary_table_v1(tbl_df1_v1, crp_lbl, "grp", "Group")
+crp_grp_tbl_v2 <- fn_build_summary_table_v2(tbl_df1_v2, crp_lbl, "grp", "Group")
+#crp_grp_tbl_v3 <- fn_build_summary_table_v3(tbl_df1_v3, crp_lbl, "grp", "Group")
+
+crp_grp_tbl_v1 
+```
+
+#### Type
+
+```{r}
+#| label: crp_typ_table
+
+df1 <- crp_typ_tbl_df
+df2 <- ktc_typ_palette_df |> select(typ, lbl)
+
+dfj <- df1 |>
+   left_join(df2, by = "typ") |>
+   select(typ,lbl,mkm, pct)
+tbl_v1 <- dfj |> select(typ, lbl, mkm, pct)
+#tbl_v2 <- dfj |> select(typ, lbl, pct)
+tbl_v3 <- dfj |> select(typ, pct)
+
+crp_typ_tbl_v1 <- fn_build_summary_table_v1(tbl_v1, crp_lbl, "typ", "Type")
+#crp_typ_tbl_v2 <- fn_build_summary_table_v2(tbl_v2, crp_lbl, "typ", "Type")
+crp_typ_tbl_v3 <- fn_build_summary_table_v3(tbl_v3, crp_lbl, "typ", "Type")
+
+crp_typ_tbl_v1 
+
+```
+
+### CRP Maps
+
+#### Group
+
+```{r}
+#| label: crp_grp_map
+#| fig-width: 10
+#| fig-aspect: .7   
+#| out-width: 100%
+
+plot_data <- ktc_grp_cmb_sf |>
+  select(cgrp) |>
+  rename(grp = cgrp)
+plot_data <- plot_data |>
+  mutate(grp = factor(grp, levels = ktc_grp_levels))
+plot_palette_str <- ktc_grp_palette_str[levels(plot_data$grp)]
+crp_grp_map <- fn_create_grp_map(plot_data, plot_palette_str, crp_lbl)
+crp_grp_map
+
+```
+
+#### Type
+
+```{r}
+#| label: crp_typ_map
+#| fig-width: 10
+#| fig-aspect: .7   
+#| out-width: 100%
+
+plot_data <- ktc_typ_cmb_sf |>
+  select(ctyp) |>
+  rename(typ = ctyp)
+plot_data <- plot_data |>
+  mutate(typ = factor(typ, levels = ktc_typ_levels))
+plot_palette_str <- ktc_typ_palette_str[levels(plot_data$typ)]
+crp_typ_map <- fn_create_typ_map(plot_data, plot_palette_str, crp_lbl)
+crp_typ_map
+
+```
+
+### CRP Patchwork
+
+#### Group
+
+```{r}
+#| fig-width: 10
+#| fig-aspect: .7   
+#| out-width: 100%
+
+wrap_table(crp_grp_tbl_v2, panel = "full", space = "fixed") + crp_grp_map
+
+```
+
+#### Type
+
+```{r}
+#| fig-width: 10
+#| fig-aspect: .7   
+#| out-width: 100%
+
+wrap_table(crp_typ_tbl_v3, panel = "full", space = "fixed") + crp_typ_map
+
+```
+
+## RCP Classification Summary
+
+### RCP Tables
+
+#### Group
+
+```{r}
+#| label: rcp_grp_table
+
+df1 <- rcp_grp_tbl_df
+df2 <- ktc_grp_palette_df |> select(grp, lbl)
+dfj <- df1 |>
+   left_join(df2, by = "grp") |>
+   select(grp,lbl,mkm,pct)
+
+tbl_v1 <- dfj |> select(grp, lbl, mkm, pct)
+tbl_v2 <- dfj |> select(grp, lbl, pct)
+# tbl_v3 <- dfj |> select(grp, pct)
+
+rcp_grp_tbl_v1 <- fn_build_summary_table_v1(tbl_v1, rcp_lbl, "grp", "Group")
+rcp_grp_tbl_v2 <- fn_build_summary_table_v2(tbl_v2, rcp_lbl, "grp", "Group")
+# rcp_grp_tbl_v3 <- fn_build_summary_table_v3(tbl_v3, rcp_lbl, "grp", "Group")
+
+rcp_grp_tbl_v1
+
+```
+
+#### Type
+
+```{r}
+#| label: rcp_typ_table
+
+df1 <- rcp_typ_tbl_df
+df2 <- ktc_typ_palette_df |> select(typ, lbl)
 
 dfj <- df1 |>
    left_join(df2, by = "typ") |>
    select(typ,lbl,mkm,pct)
 
-t2 <- fn_build_summary_table(dfj, rcp_lbl)
-```
-## ***Map***
+tbl_v1 <- dfj |> select(typ, lbl, mkm, pct)
+#tbl_v2 <- dfj |> select(typ, lbl, pct)
+tbl_v3 <- dfj |> select(typ, pct)
 
-```{r}
-#| label: v1
-plot_data <- tcc_cmb_sf |>
-  select(czn) |>
-  rename(type = czn)
+rcp_typ_tbl_v1 <- fn_build_summary_table_v1(tbl_v1, rcp_lbl, "typ", "Type")
+#rcp_typ_tbl_v2 <- fn_build_summary_table_v2(tbl_v2, rcp_lbl, "typ", "Type")
+rcp_typ_tbl_v3 <- fn_build_summary_table_v3(tbl_v3, rcp_lbl, "typ", "Type")
 
-type_levels <- tcc_type_palette$typ
+rcp_typ_tbl_v1 
 
-type_palette <- setNames(
-  tcc_type_palette$hex,
-  tcc_type_palette$typ
-)
-
-plot_data <- plot_data |>
-  mutate(type = factor(type, levels = type_levels))
-
-plot_palette <- type_palette[levels(plot_data$type)]
-
-v1 <- fn_create_map(plot_data,plot_palette,crp_lbl)
 ```
 
-```{r}
-#| label: v2
-plot_data <- tcc_cmb_sf |>
-  select(rzn) |>
-  rename(type = rzn)
+### RCP Maps
 
-type_levels <- tcc_type_palette$typ
-
-type_palette <- setNames(
-  tcc_type_palette$hex,
-  tcc_type_palette$typ
-)
-
-plot_data <- plot_data |>
-  mutate(type = factor(type, levels = type_levels))
-
-plot_palette <- type_palette[levels(plot_data$type)]
-
-v2 <- fn_create_map(plot_data,plot_palette,rcp_lbl)
-```
+#### Group
 
 ```{r}
-#| label: t1-v1
-t1
-```
-```{r}
-#| label: v1_hw
+#| label: rcp_grp_map
 #| fig-width: 10
 #| fig-aspect: .7   
 #| out-width: 100%
-v1 
-```
-```{r}
-#| label: t2-v2
-t2
+
+plot_data <- ktc_grp_cmb_sf |>
+  select(rgrp) |>
+  rename(grp = rgrp)
+plot_data <- plot_data |>
+  mutate(grp = factor(grp, levels = ktc_grp_levels))
+plot_palette_str <- ktc_grp_palette_str[levels(plot_data$grp)]
+rcp_grp_map <- fn_create_grp_map(plot_data, plot_palette_str, rcp_lbl)
+rcp_grp_map
 ```
 
+#### Type
+
 ```{r}
-#| label: v2_hw
+#| label: rcp_typ_map
 #| fig-width: 10
-#| fig-aspectt: .7  
+#| fig-aspect: .7   
 #| out-width: 100%
-v2
+
+plot_data <- ktc_typ_cmb_sf |>
+  select(rtyp) |>
+  rename(typ = rtyp)
+plot_data <- plot_data |>
+  mutate(typ = factor(typ, levels = ktc_typ_levels))
+plot_palette_str <- ktc_typ_palette_str[levels(plot_data$typ)]
+rcp_typ_map <- fn_create_typ_map(plot_data, plot_palette_str, rcp_lbl)
+rcp_typ_map
+```
+
+### RCP Patchwork
+
+#### Group
+
+```{r}
+#| label: rcp_grp_patchwork
+#| fig-width: 10
+#| fig-aspect: .7   
+#| out-width: 100%
+
+wrap_table(rcp_grp_tbl_v2, panel = "full", space = "fixed") + rcp_grp_map
+
+```
+
+#### Type
+
+```{r}
+#| label: rcp_typ_patchwork
+#| fig-width: 10
+#| fig-aspect: .7   
+#| out-width: 100%
+
+wrap_table(rcp_typ_tbl_v3, panel = "full", space = "fixed") + rcp_typ_map
+
 ```
